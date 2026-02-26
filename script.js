@@ -20,17 +20,14 @@ localStorage.setItem('gs_userid', myUserId);
 let myNickname = localStorage.getItem('gs_nickname') || null;
 
 window.onload = () => {
-    // Monitor de autenticação persistente
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             const sessionRef = db.ref(`users/${user.uid}/active_session`);
             const snapshot = await sessionRef.once('value');
-            
             if (snapshot.exists() && snapshot.val() !== sessionKey) {
                 alert("Sessão encerrada: Logado em outro dispositivo.");
                 auth.signOut(); return;
             }
-            
             sessionRef.set(sessionKey);
             sessionRef.onDisconnect().remove();
 
@@ -44,18 +41,14 @@ window.onload = () => {
             unlockSite();
             syncUserData();
         } else if (myNickname) {
-            // Se já tem apelido de convidado salvo
             unlockSite();
             loadLocalData();
         } else {
-            // Só mostra o modal se realmente não houver nada salvo
             document.getElementById('authModal').classList.remove('hidden');
             document.getElementById('catalogContent').classList.add('hidden');
         }
     });
-
-    listenToChat(); 
-    listenToBroadcast();
+    listenToChat(); listenToBroadcast();
 };
 
 function unlockSite() {
@@ -95,10 +88,8 @@ function registerOnline() {
     db.ref('online_users').on('value', (s) => {
         const users = s.val() || {};
         const userArray = Object.entries(users).map(([uid, u]) => ({ uid, ...u }));
-        
         const list = document.getElementById('onlineList');
         if(list) list.innerHTML = userArray.map(u => `<div class="online-user"><span class="online-dot"></span> ${u.name}</div>`).join('');
-        
         const adminList = document.getElementById('adminUserFullList');
         if(adminList) {
             adminList.innerHTML = userArray.map(u => `
@@ -111,7 +102,7 @@ function registerOnline() {
     });
 }
 
-// --- FUNÇÕES DE API E PLAYER (TMDB) ---
+// --- FUNÇÕES TMDB ---
 
 window.loadEpisodes = (sNum, eNum = 1) => {
     fetch(`https://api.themoviedb.org/3/tv/${currentMovieData.id}/season/${sNum}?api_key=${API_KEY}&language=pt-BR`).then(r => r.json()).then(d => {
@@ -147,17 +138,11 @@ async function fetchTrending() {
     let url = `https://api.themoviedb.org/3/discover/${currentType.includes('movie')?'movie':'tv'}?api_key=${API_KEY}&language=pt-BR&sort_by=popularity.desc&page=${currentPage}`; 
     if (!q && currentType === 'all') url = `https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR&page=${currentPage}`; 
     if (q) url = `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${q}&language=pt-BR&page=${currentPage}`; 
-    
-    const res = await fetch(url); 
-    const data = await res.json(); 
+    const res = await fetch(url); const data = await res.json(); 
     let detailed = await Promise.all(data.results.filter(i => i.media_type !== 'person').map(async (i) => { 
-        try { 
-            const d = await (await fetch(`https://api.themoviedb.org/3/tv/${i.id}?api_key=${API_KEY}&language=pt-BR`)).json(); 
-            i.last_ep = d.last_episode_to_air; i.seasons_count = d.number_of_seasons; 
-        } catch(e){} return i; 
+        try { const d = await (await fetch(`https://api.themoviedb.org/3/tv/${i.id}?api_key=${API_KEY}&language=pt-BR`)).json(); i.last_ep = d.last_episode_to_air; i.seasons_count = d.number_of_seasons; } catch(e){} return i; 
     })); 
-    renderResults(detailed); 
-    renderPagination(data.total_pages); 
+    renderResults(detailed); renderPagination(data.total_pages); 
 }
 
 window.loadPlayer = (id, type, title, poster, s=1, e=1) => { 
@@ -194,10 +179,8 @@ window.triggerBroadcastPrompt = () => { const m = prompt("Aviso (10s):"); if(m) 
 window.toggleSidebar = () => { document.getElementById('sidebar').classList.toggle('closed'); document.querySelector('main').classList.toggle('sidebar-closed'); };
 window.backToHome = () => { document.getElementById('catalogContent').classList.remove('hidden'); document.getElementById('playerSection').classList.add('hidden'); document.getElementById('mainPlayer').src = ""; };
 window.openAdminPanel = () => { if(!isAdmin) return; currentType = 'admin'; document.getElementById('adminSection').classList.remove('hidden'); document.getElementById('adminMainView').classList.remove('hidden'); };
-
 window.handleChatKey = (e) => { if(e.key === 'Enter') window.sendChatMessage(); };
 window.sendChatMessage = () => { const input = document.getElementById('chatInput'); if(input.value.trim()) { db.ref('global_chat').push({ name: myNickname, text: input.value, timestamp: firebase.database.ServerValue.TIMESTAMP }); input.value = ''; } };
-
 function listenToChat() { db.ref('global_chat').limitToLast(40).on('value', s => { const box = document.getElementById('chatMessages'); if(box) box.innerHTML = Object.values(s.val() || {}).map(m => `<div class="msg"><b>${m.name}:</b> ${m.text}</div>`).join(''); if(box) box.scrollTop = box.scrollHeight; }); }
 function listenToBroadcast() { db.ref('admin_broadcast').on('value', (s) => { const banner = document.getElementById('broadcastBanner'); if(s.exists() && s.val().active) { document.getElementById('broadcastText').innerText = "⚠️ " + s.val().message; banner.classList.remove('hidden'); setTimeout(() => { banner.classList.add('hidden'); if(isAdmin) db.ref('admin_broadcast').update({active: false}); }, 10000); } }); }
 

@@ -16,7 +16,8 @@
         <button onclick="window.closeBroadcast()" class="close-banner">×</button>
     </div>
 
-    <div id="authModal" class="auth-overlay hidden"> <div class="auth-card">
+    <div id="authModal" class="auth-overlay hidden">
+        <div class="auth-card">
             <h1>Global<span style="color: var(--primary);">Stream</span></h1>
             <p style="margin-bottom: 15px; font-size: 0.9rem; color: #aaa;">Acesse para liberar o conteúdo</p>
             
@@ -31,6 +32,10 @@
 
                 <input type="text" id="guestNickname" placeholder="Escolher apenas um Apelido">
                 <button class="btn-primary" style="background: #333;" onclick="window.accessAsGuest()">Acessar como Convidado</button>
+                
+                <a href="https://t.me/+ENXx-CGIswRkNGMx" target="_blank" class="btn-telegram" style="margin-top: 20px; display: block; text-decoration: none;">
+                    ✈️ ENTRAR NO GRUPO
+                </a>
             </div>
             
             <p id="authError" style="color: #e74c3c; font-size: 0.8rem; margin-top: 10px;"></p>
@@ -46,12 +51,13 @@
             <button class="tab-btn" onclick="window.setSearchType('anime', this)">Animes</button>
             <button class="tab-btn" onclick="window.setSearchType('anime_recent', this)">Animes Atualizados</button>
             <button class="tab-btn" onclick="window.checkAuthAction('favorites', this)">❤ Favoritos</button>
-            <button class="tab-btn" id="sidebarToggleBtn" onclick="window.toggleSidebar()" style="color: #ccc;">💬 Ocultar Chat</button>
+            <button class="tab-btn" id="sidebarToggleBtn" onclick="window.toggleSidebar()" style="color: #ccc;">💬 Chat</button>
             <button class="tab-btn hidden" id="adminBtn" onclick="window.openAdminPanel()" style="color: #f39c12;">⚙️ Admin</button>
         </nav>
         
         <div class="search-container">
             <div class="search-bar">
+                <a href="https://t.me/+ENXx-CGIswRkNGMx" target="_blank" class="icon-telegram-mini" title="Grupo Telegram">✈️</a>
                 <select id="genreSelect" onchange="window.applyFilters()">
                     <option value="">Gêneros</option>
                     <option value="28">Ação</option><option value="12">Aventura</option>
