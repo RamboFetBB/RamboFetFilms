@@ -16,25 +16,22 @@
         <button onclick="window.closeBroadcast()" class="close-banner">×</button>
     </div>
 
+    <div id="profileModal" class="auth-overlay hidden">
+        <div class="auth-card">
+            <h2>Escolha seu <span style="color: var(--primary);">Apelido</span></h2>
+            <p style="font-size: 0.8rem; color: #aaa; margin: 10px 0;">Defina como você aparecerá no chat e na lista online.</p>
+            <input type="text" id="newUsername" placeholder="Seu apelido aqui...">
+            <button class="btn-primary" style="margin-top: 15px;" onclick="window.saveProfile()">Confirmar e Entrar</button>
+        </div>
+    </div>
+
     <div id="authModal" class="auth-overlay hidden">
         <div class="auth-card">
             <button class="close-modal" onclick="window.closeAuthModal()">×</button>
             <h1>Global<span style="color: var(--primary);">StreamV1</span></h1>
-            <p id="authSubtitle" style="margin-bottom: 15px; font-size: 0.9rem; color: #aaa;">Acesse sua conta para salvar progresso</p>
             <input type="email" id="authEmail" required placeholder="E-mail">
             <input type="password" id="authPassword" required placeholder="Senha">
-            <div class="auth-actions">
-                <button id="mainAuthBtn" class="btn-primary" onclick="window.handleAuth()">Entrar / Criar Conta</button>
-            </div>
-            <p id="authError" style="color: #e74c3c; font-size: 0.8rem; margin-top: 10px;"></p>
-        </div>
-    </div>
-
-    <div id="profileModal" class="auth-overlay hidden">
-        <div class="auth-card">
-            <h2>Escolha seu <span style="color: var(--primary);">Apelido</span></h2>
-            <input type="text" id="newUsername" placeholder="Como quer ser chamado?">
-            <button class="btn-primary" style="margin-top: 15px;" onclick="window.saveProfile()">Salvar</button>
+            <button id="mainAuthBtn" class="btn-primary" onclick="window.handleAuth()">Entrar</button>
         </div>
     </div>
 
@@ -45,38 +42,68 @@
             <button class="tab-btn" onclick="window.setSearchType('movie', this)">Filmes</button>
             <button class="tab-btn" onclick="window.setSearchType('tv', this)">Séries</button>
             <button class="tab-btn" onclick="window.setSearchType('anime', this)">Animes</button>
-            <button class="tab-btn" onclick="window.setSearchType('anime_recent', this)">Animes Atualizados</button>
             <button class="tab-btn" onclick="window.checkAuthAction('favorites', this)">❤ Favoritos</button>
-            <button class="tab-btn" id="sidebarToggleBtn" onclick="window.toggleSidebar()" style="color: #ccc;">💬 Ocultar Chat</button>
+            <button class="tab-btn" id="sidebarToggleBtn" onclick="window.toggleSidebar()">💬 Chat</button>
             <button class="tab-btn hidden" id="adminBtn" onclick="window.openAdminPanel()" style="color: #f39c12;">⚙️ Admin</button>
         </nav>
         
         <div class="search-container">
             <div class="search-bar">
-                <select id="genreSelect" onchange="window.applyFilters()">
-                    <option value="">Gêneros</option>
-                    <option value="28">Ação</option><option value="12">Aventura</option>
-                    <option value="16">Animação</option><option value="35">Comédia</option>
-                </select>
                 <input type="text" id="searchInput" placeholder="Buscar..." oninput="window.mainSearch()">
-                <button id="loginBtn" class="btn-login" onclick="window.openAuthModal()">Iniciar Sessão</button>
-                <div id="userProfileBtn" class="hidden" style="display: flex; align-items: center; gap: 10px;">
-                    <span class="status-badge online">Online</span>
-                    <span id="displayUserName" style="font-weight: bold; font-size: 0.85rem;">Perfil</span>
-                    <button onclick="window.handleLogout()" style="background: none; border: none; color: #aaa; cursor: pointer; font-weight: bold;">Sair</button>
+                <button id="loginBtn" class="btn-login" onclick="window.openAuthModal()">Login</button>
+                <div id="userProfileBtn" class="hidden">
+                    <span id="displayUserName">Perfil</span>
+                    <button onclick="window.handleLogout()" class="logout-link">Sair</button>
                 </div>
             </div>
         </div>
     </header>
 
-    <main>
+    <main id="layoutMain">
+        <div id="contentArea">
+            <div id="catalogContent">
+                <div id="continueWatchingSection" class="hidden">
+                    <h2 class="section-title-red">Continuar Assistindo</h2>
+                    <div class="results-grid" id="historyGrid"></div>
+                </div>
+                <h2 class="section-title-red" id="sectionTitle">Destaques da Semana</h2>
+                <div class="results-grid" id="resultsGrid"></div>
+                <div id="pagination" class="pagination"></div>
+            </div>
+
+            <div id="playerSection" class="hidden player-view">
+                <div class="player-header">
+                    <button onclick="window.backToHome()" class="btn-back">⬅ VOLTAR</button>
+                    <h2 id="videoTitle">Título</h2>
+                    <button id="playerFavBtn" class="btn-fav" onclick="window.toggleFavoriteCurrent()">FAVORITAR</button>
+                </div>
+                <div class="player-container">
+                    <iframe id="mainPlayer" src="" allowfullscreen></iframe>
+                </div>
+                <div class="player-details">
+                    <div class="server-options">
+                        <label>Servidor:</label>
+                        <select id="serverSelect" onchange="window.reloadPlayerServer()">
+                            <option value="superflix">Servidor 1</option>
+                            <option value="embedsu">Servidor 2</option>
+                        </select>
+                        <button id="nextEpBtn" class="btn-next-ep hidden" onclick="window.playNextEpisode()">PRÓXIMO EP ➔</button>
+                    </div>
+                    <div id="seriesNavigation" class="series-nav hidden">
+                        <select id="seasonSelect" onchange="window.changeSeason()"></select>
+                        <div id="episodeList" class="episode-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <aside id="sidebar" class="sidebar-right">
             <section class="online-section">
-                <div class="sidebar-header"><h3>Usuários Online</h3></div>
+                <h3>Usuários Online</h3>
                 <div id="onlineList" class="online-list"></div>
             </section>
             <section class="chat-section">
-                <div class="sidebar-header" style="border-top: 1px solid #333;"><h3>Chat Global</h3></div>
+                <h3>Chat Global</h3>
                 <div id="chatMessages" class="chat-messages"></div>
                 <div class="chat-input-area">
                     <input type="text" id="chatInput" placeholder="Mensagem..." onkeypress="window.handleChatKey(event)">
@@ -84,92 +111,6 @@
                 </div>
             </section>
         </aside>
-
-        <div id="playerSection" class="hidden player-view">
-            <div class="player-controls-top">
-                <div class="player-controls-left">
-                    <button onclick="window.backToHome()" class="btn-back">⬅ VOLTAR</button>
-                    <button id="nextEpBtn" class="btn-next-ep hidden" onclick="window.playNextEpisode()">PRÓXIMO EPISÓDIO ➔</button>
-                </div>
-                <h2 id="videoTitle">Título</h2>
-                <button id="playerFavBtn" class="btn-fav" onclick="window.toggleFavoriteCurrent()">FAVORITAR</button>
-            </div>
-            <div class="video-info-centered">
-                <div class="server-options">
-                    <label>Servidor:</label>
-                    <select id="serverSelect" onchange="window.reloadPlayerServer()">
-                        <option value="superflix">Servidor 1</option>
-                        <option value="embedsu">Servidor 2</option>
-                    </select>
-                </div>
-                <div id="seriesNavigation" class="series-nav hidden">
-                    <select id="seasonSelect" class="styled-select" onchange="window.changeSeason()"></select>
-                    <div id="episodeList" class="episode-list"></div>
-                </div>
-            </div>
-            <div class="player-container">
-                <iframe id="mainPlayer" src="" allowfullscreen></iframe>
-            </div>
-        </div>
-
-        <div id="catalogContent">
-            <div id="adminSection" class="hidden">
-                <div id="adminMainView">
-                    <div style="display: flex; gap: 15px; margin-bottom: 20px;">
-                        <button onclick="window.adminClearChat()" class="btn-primary" style="background: #e74c3c; width: auto;">Limpar Chat</button>
-                        <button onclick="window.triggerBroadcastPrompt()" class="btn-primary" style="background: #2980b9; width: auto;">📢 Alerta Global</button>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                        <div>
-                            <h3>👥 Gerenciar Usuários</h3>
-                            <button onclick="window.showUsersPage()" class="btn-primary" style="background: #3498db; margin-top:10px;">Ver Usuários Online ➔</button>
-                        </div>
-                        <div>
-                            <h3>💰 Adicionar Conta</h3>
-                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top:10px;">
-                                <div style="display: flex; gap: 5px;">
-                                    <input type="text" id="debtName" placeholder="Nome" style="flex:2; padding:10px; background:#222; border:1px solid #444; color:#fff;">
-                                    <input type="text" id="debtValue" placeholder="Valor" style="flex:1; padding:10px; background:#222; border:1px solid #444; color:#fff;">
-                                </div>
-                                <select id="debtPriority" style="padding:10px; background:#222; border:1px solid #444; color:#fff;">
-                                    <option value="3">Alta</option><option value="2" selected>Média</option><option value="1">Baixa</option>
-                                </select>
-                                <button onclick="window.addDebt()" class="btn-primary" style="background:#27ae60;">+</button>
-                            </div>
-                            <button onclick="window.showDebtsPage()" style="margin-top: 10px; color:#2ecc71; background:none; border:1px solid #2ecc71; padding:5px; cursor:pointer; width:100%;">Página de Contas ➔</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="usersPageView" class="hidden admin-full-page" style="background:#000; padding:30px; border-radius:15px; border:2px solid #3498db;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:30px;">
-                        <h1 style="color:#3498db;">USUÁRIOS ONLINE</h1>
-                        <button onclick="window.hideAdminSubpages()" class="btn-back">VOLTAR</button>
-                    </div>
-                    <div id="adminUserFullList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:15px;"></div>
-                </div>
-
-                <div id="debtsPageView" class="hidden admin-full-page" style="background:#000; padding:30px; border-radius:15px; border:2px solid #2ecc71;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                        <div style="display:flex; align-items:center; gap:20px;">
-                            <h1 style="color:#2ecc71;">PÁGINA DE CONTAS</h1>
-                            <div style="background:#111; border:2px solid #2ecc71; padding:10px; border-radius:8px;">Total: <span id="totalDebtDisplay" style="font-weight:900;">R$ 0,00</span></div>
-                        </div>
-                        <button onclick="window.hideAdminSubpages()" class="btn-back">VOLTAR</button>
-                    </div>
-                    <div id="adminDebtList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:20px;"></div>
-                </div>
-            </div>
-
-            <div id="continueWatchingSection" class="hidden">
-                <h2 class="section-title-red">Continuar Assistindo</h2>
-                <div class="results-grid small-cards" id="historyGrid"></div>
-            </div>
-
-            <h2 class="section-title-red" id="sectionTitle">Destaques da Semana</h2>
-            <div class="results-grid" id="resultsGrid"></div>
-            <div id="pagination" class="pagination"></div>
-        </div>
     </main>
 
     <script src="script.js"></script>
