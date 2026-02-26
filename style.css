@@ -7,85 +7,70 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background-color: var(--bg-dark); color: var(--text); font-family: 'Segoe UI', Arial, sans-serif; overflow-x: hidden; }
+body { background-color: var(--bg-dark); color: var(--text); font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
 
 /* HEADER RESPONSIVO */
 header {
     background: var(--glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
     display: flex; justify-content: space-between; align-items: center;
     padding: 15px 3%; position: sticky; top: 0; z-index: 5000; border-bottom: 1px solid rgba(255,255,255,0.1);
-    flex-wrap: wrap; gap: 10px; /* Permite quebrar linha em telas muito pequenas */
+    flex-wrap: wrap; gap: 10px;
 }
-.logo { font-size: 1.6rem; font-weight: 900; cursor: pointer; text-transform: uppercase; white-space: nowrap; }
+.logo { font-size: 1.5rem; font-weight: 900; text-transform: uppercase; cursor: pointer; }
 .logo span { color: var(--primary); }
 
-.tabs { display: flex; gap: 5px; align-items: center; overflow-x: auto; padding-bottom: 5px; max-width: 100%; scrollbar-width: none; }
+.tabs { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
-
-.tab-btn { background: transparent; color: #aaa; border: none; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: 0.3s; white-space: nowrap; }
+.tab-btn { background: transparent; color: #aaa; border: none; padding: 8px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; white-space: nowrap; transition: 0.3s; }
 .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
-.search-container { display: flex; gap: 10px; align-items: center; width: 100%; justify-content: space-between; }
-.search-bar { display: flex; gap: 5px; align-items: center; flex: 1; }
-.search-bar input { flex: 1; background: #222; border: 1px solid #444; color: white; padding: 8px 12px; border-radius: 6px; outline: none; font-size: 0.85rem; min-width: 100px; }
+.search-container { display: flex; gap: 10px; align-items: center; width: 100%; }
+.search-bar { display: flex; gap: 5px; flex: 1; }
+.search-bar input { flex: 1; background: #222; border: 1px solid #444; color: white; padding: 10px; border-radius: 6px; outline: none; font-size: 0.85rem; }
 
-/* LAYOUT PRINCIPAL */
-main { padding: 20px 3%; margin-right: 260px; transition: margin-right 0.3s; width: auto; }
+/* LAYOUT E GRID */
+main { padding: 20px 3%; transition: 0.3s; margin-right: 260px; }
 main.sidebar-closed { margin-right: 0; }
 
-/* SIDEBAR RESPONSIVA */
-.sidebar-right {
-    position: fixed; right: 0; top: 0; width: 260px; height: 100vh;
-    background: #0a0a0a; border-left: 1px solid #222; display: flex; flex-direction: column; z-index: 6000; transition: transform 0.3s;
-}
-.sidebar-right.closed { transform: translateX(100%); }
-
-/* GRID DE RESULTADOS ADAPTÁVEL */
 .results-grid { 
     display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* No celular diminui automaticamente */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
     gap: 15px; 
 }
 
-/* CARDS */
 .movie-card { background: var(--bg-card); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+.movie-card:hover { transform: translateY(-5px); border-color: var(--primary); }
 .poster-container { position: relative; width: 100%; aspect-ratio: 2/3; }
 .movie-card img { width: 100%; height: 100%; object-fit: cover; }
-.movie-card h3 { font-size: 0.75rem; padding: 8px; text-align: center; }
+.movie-card h3 { font-size: 0.75rem; padding: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ETIQUETAS */
+.type-badge { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.85); padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; z-index: 5; pointer-events: none;}
+.season-badge { position: absolute; top: 5px; right: 5px; background: var(--primary); padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; z-index: 5; pointer-events: none;}
+
+/* MODAL DE PERFIL OBRIGATÓRIO */
+.auth-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); display: flex; align-items: center; justify-content: center; z-index: 10000; padding: 20px; }
+#profileModal .close-modal { display: none; } /* Bloqueia fechar sem nome */
+.auth-card { background: var(--bg-card); padding: 30px; border-radius: 15px; text-align: center; width: 100%; max-width: 380px; border: 1px solid #333; }
+
+/* SIDEBAR E CHAT */
+.sidebar-right { position: fixed; right: 0; top: 70px; width: 260px; height: calc(100vh - 70px); background: #0a0a0a; border-left: 1px solid #222; display: flex; flex-direction: column; z-index: 100; transition: 0.3s; }
+.sidebar-right.closed { transform: translateX(100%); }
+.chat-messages { flex: 1; overflow-y: auto; padding: 15px; font-size: 0.8rem; }
 
 /* PLAYER RESPONSIVO */
 .player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; border: 2px solid #222; }
-.player-controls-top { display: flex; flex-direction: column; gap: 15px; background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
+.episode-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; max-height: 180px; overflow-y: auto; padding: 10px 0; }
+.ep-btn { background: #111; border: 1px solid #333; color: white; padding: 8px; border-radius: 6px; font-size: 0.7rem; cursor: pointer; }
+.ep-btn.active { background: var(--primary); border-color: var(--primary); }
 
-/* MEDIA QUERIES (PARA CELULAR) */
+/* ADAPTAÇÃO PARA CELULAR */
 @media (max-width: 768px) {
-    main { margin-right: 0 !important; padding: 15px; } /* Remove margem da sidebar no celular */
-    
-    .sidebar-right { width: 100%; transform: translateX(100%); } /* Sidebar ocupa tela toda se aberta */
-    
-    .search-container { flex-direction: column; align-items: stretch; }
-    
-    .player-controls-top { align-items: stretch; text-align: center; }
-    .player-controls-left { justify-content: center; }
-    
-    #videoTitle { font-size: 1rem; }
-    
-    .results-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; } /* Itens menores no celular */
-    
-    .logo { font-size: 1.2rem; }
-
-    .ep-btn { padding: 6px; font-size: 0.75rem; }
+    main { margin-right: 0; padding: 10px; }
+    .sidebar-right { width: 100%; top: 0; height: 100vh; }
+    .results-grid { grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px; }
+    .logo { font-size: 1.1rem; }
+    .search-container { flex-direction: column; }
 }
 
-/* Resto dos estilos (Modais, Admin, etc) preservados */
-.broadcast-banner { background: var(--primary); color: white; text-align: center; padding: 10px; font-weight: bold; position: relative; z-index: 9999; }
-.auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle, #222 0%, #000 100%); display: flex; align-items: center; justify-content: center; z-index: 10000; }
-.auth-card { background: var(--bg-card); padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 380px; border: 1px solid #333; }
-.btn-primary { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase;}
-.type-badge { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.85); padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; z-index: 5; pointer-events: none;}
-.season-badge { position: absolute; top: 5px; right: 5px; background: var(--primary); padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; z-index: 5; pointer-events: none;}
-.release-info { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(229, 9, 20, 0.95); color: white; font-size: 0.6rem; padding: 4px 2px; text-align: center; font-weight: bold; z-index: 5; pointer-events: none;}
-.episode-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; max-height: 200px; overflow-y: auto; }
-.ep-btn { background: #1a1a1a; border: 1px solid #333; color: white; padding: 8px; border-radius: 6px; cursor: pointer; text-align: center; font-size: 0.8rem; }
-.ep-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: bold; }
 .hidden { display: none !important; }
