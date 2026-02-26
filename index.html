@@ -16,8 +16,7 @@
         <button onclick="window.closeBroadcast()" class="close-banner">×</button>
     </div>
 
-    <div id="authModal" class="auth-overlay">
-        <div class="auth-card">
+    <div id="authModal" class="auth-overlay hidden"> <div class="auth-card">
             <h1>Global<span style="color: var(--primary);">Stream</span></h1>
             <p style="margin-bottom: 15px; font-size: 0.9rem; color: #aaa;">Acesse para liberar o conteúdo</p>
             
@@ -110,7 +109,8 @@
             </div>
         </div>
 
-        <div id="catalogContent" class="hidden"> <div id="adminSection" class="hidden">
+        <div id="catalogContent" class="hidden">
+            <div id="adminSection" class="hidden">
                 <div id="adminMainView">
                     <div style="display: flex; gap: 15px; margin-bottom: 20px;">
                         <button onclick="window.adminClearChat()" class="btn-primary" style="background: #e74c3c; width: auto;">Limpar Chat</button>
