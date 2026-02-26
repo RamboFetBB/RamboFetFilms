@@ -3,78 +3,89 @@
     --bg-dark: #0a0a0a;
     --bg-card: #141414;
     --text: #ffffff;
+    --glass: rgba(10, 10, 10, 0.85);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background-color: var(--bg-dark); color: var(--text); font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+body { background-color: var(--bg-dark); color: var(--text); font-family: 'Segoe UI', Arial, sans-serif; overflow-x: hidden; }
 
 /* HEADER RESPONSIVO */
 header {
-    background: rgba(10, 10, 10, 0.95); padding: 15px 3%;
-    display: flex; flex-direction: column; align-items: center; gap: 15px;
-    position: sticky; top: 0; z-index: 5000; border-bottom: 1px solid #222;
+    background: var(--glass); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 15px 3%; position: sticky; top: 0; z-index: 5000; border-bottom: 1px solid rgba(255,255,255,0.1);
+    flex-wrap: wrap; gap: 10px; /* Permite quebrar linha em telas muito pequenas */
 }
-
-.logo { font-size: 1.6rem; font-weight: 900; text-transform: uppercase; cursor: pointer; }
+.logo { font-size: 1.6rem; font-weight: 900; cursor: pointer; text-transform: uppercase; white-space: nowrap; }
 .logo span { color: var(--primary); }
 
-.tabs { display: flex; gap: 10px; overflow-x: auto; width: 100%; justify-content: center; scrollbar-width: none; }
-.tab-btn { background: none; border: none; color: #aaa; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; font-weight: bold; white-space: nowrap; transition: 0.3s; }
+.tabs { display: flex; gap: 5px; align-items: center; overflow-x: auto; padding-bottom: 5px; max-width: 100%; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+
+.tab-btn { background: transparent; color: #aaa; border: none; padding: 8px 12px; cursor: pointer; font-size: 0.85rem; font-weight: bold; transition: 0.3s; white-space: nowrap; }
 .tab-btn.active { color: var(--primary); border-bottom: 2px solid var(--primary); }
 
-.search-container { width: 100%; display: flex; justify-content: center; }
-.search-bar { display: flex; gap: 10px; width: 100%; max-width: 600px; flex-wrap: wrap; justify-content: center; }
-.search-bar input { flex: 1; min-width: 150px; background: #222; border: 1px solid #333; color: #fff; padding: 8px; border-radius: 5px; }
+.search-container { display: flex; gap: 10px; align-items: center; width: 100%; justify-content: space-between; }
+.search-bar { display: flex; gap: 5px; align-items: center; flex: 1; }
+.search-bar input { flex: 1; background: #222; border: 1px solid #444; color: white; padding: 8px 12px; border-radius: 6px; outline: none; font-size: 0.85rem; min-width: 100px; }
 
-/* ESTRUTURA PRINCIPAL (EVITA SOBREPOSIÇÃO) */
-#layoutMain { display: flex; min-height: 100vh; }
-#contentArea { flex: 1; padding: 20px; transition: 0.3s; width: 100%; }
+/* LAYOUT PRINCIPAL */
+main { padding: 20px 3%; margin-right: 260px; transition: margin-right 0.3s; width: auto; }
+main.sidebar-closed { margin-right: 0; }
 
-/* GRID DE CARDS RESPONSIVO */
+/* SIDEBAR RESPONSIVA */
+.sidebar-right {
+    position: fixed; right: 0; top: 0; width: 260px; height: 100vh;
+    background: #0a0a0a; border-left: 1px solid #222; display: flex; flex-direction: column; z-index: 6000; transition: transform 0.3s;
+}
+.sidebar-right.closed { transform: translateX(100%); }
+
+/* GRID DE RESULTADOS ADAPTÁVEL */
 .results-grid { 
     display: grid; 
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* No celular diminui automaticamente */
     gap: 15px; 
 }
 
-.movie-card { background: var(--bg-card); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; border: 1px solid #222; }
-.movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
-.movie-card h3 { font-size: 0.8rem; padding: 10px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* CARDS */
+.movie-card { background: var(--bg-card); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.05); }
+.poster-container { position: relative; width: 100%; aspect-ratio: 2/3; }
+.movie-card img { width: 100%; height: 100%; object-fit: cover; }
+.movie-card h3 { font-size: 0.75rem; padding: 8px; text-align: center; }
 
-/* ETIQUETAS */
-.type-badge { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.8); padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; }
-.season-badge { position: absolute; top: 5px; right: 5px; background: var(--primary); padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; }
-.release-info { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(229, 9, 20, 0.9); font-size: 0.65rem; padding: 5px; text-align: center; }
+/* PLAYER RESPONSIVO */
+.player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; border: 2px solid #222; }
+.player-controls-top { display: flex; flex-direction: column; gap: 15px; background: #111; padding: 15px; border-radius: 10px; margin-bottom: 20px; }
 
-/* SIDEBAR FIXA NO PC */
-.sidebar-right {
-    width: 300px; background: #0a0a0a; border-left: 1px solid #222;
-    display: flex; flex-direction: column; height: calc(100vh - 120px);
-    position: sticky; top: 120px; transition: 0.3s;
-}
-.sidebar-right.closed { width: 0; border: none; overflow: hidden; }
+/* MEDIA QUERIES (PARA CELULAR) */
+@media (max-width: 768px) {
+    main { margin-right: 0 !important; padding: 15px; } /* Remove margem da sidebar no celular */
+    
+    .sidebar-right { width: 100%; transform: translateX(100%); } /* Sidebar ocupa tela toda se aberta */
+    
+    .search-container { flex-direction: column; align-items: stretch; }
+    
+    .player-controls-top { align-items: stretch; text-align: center; }
+    .player-controls-left { justify-content: center; }
+    
+    #videoTitle { font-size: 1rem; }
+    
+    .results-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; } /* Itens menores no celular */
+    
+    .logo { font-size: 1.2rem; }
 
-.chat-messages { flex: 1; overflow-y: auto; background: #050505; padding: 15px; font-size: 0.85rem; }
-.online-list { padding: 10px; max-height: 200px; overflow-y: auto; border-bottom: 1px solid #222; }
-
-/* PLAYER */
-.player-container { width: 100%; aspect-ratio: 16/9; background: #000; border: 1px solid #333; margin-bottom: 15px; }
-iframe { width: 100%; height: 100%; border: none; }
-
-/* MEDIA QUERIES (CELULAR) */
-@media (max-width: 1024px) {
-    #layoutMain { flex-direction: column; }
-    .sidebar-right { 
-        position: fixed; right: 0; top: 0; height: 100vh; z-index: 6000; 
-        width: 100%; transform: translateX(100%); 
-    }
-    .sidebar-right:not(.closed) { transform: translateX(0); }
-    .results-grid { grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px; }
+    .ep-btn { padding: 6px; font-size: 0.75rem; }
 }
 
-@media (min-width: 1025px) {
-    header { flex-direction: row; justify-content: space-between; }
-    .tabs { width: auto; }
-}
-
+/* Resto dos estilos (Modais, Admin, etc) preservados */
+.broadcast-banner { background: var(--primary); color: white; text-align: center; padding: 10px; font-weight: bold; position: relative; z-index: 9999; }
+.auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle, #222 0%, #000 100%); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+.auth-card { background: var(--bg-card); padding: 30px; border-radius: 15px; text-align: center; width: 90%; max-width: 380px; border: 1px solid #333; }
+.btn-primary { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase;}
+.type-badge { position: absolute; top: 5px; left: 5px; background: rgba(0,0,0,0.85); padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; z-index: 5; pointer-events: none;}
+.season-badge { position: absolute; top: 5px; right: 5px; background: var(--primary); padding: 3px 6px; border-radius: 4px; font-size: 0.6rem; font-weight: bold; z-index: 5; pointer-events: none;}
+.release-info { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(229, 9, 20, 0.95); color: white; font-size: 0.6rem; padding: 4px 2px; text-align: center; font-weight: bold; z-index: 5; pointer-events: none;}
+.episode-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; max-height: 200px; overflow-y: auto; }
+.ep-btn { background: #1a1a1a; border: 1px solid #333; color: white; padding: 8px; border-radius: 6px; cursor: pointer; text-align: center; font-size: 0.8rem; }
+.ep-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: bold; }
 .hidden { display: none !important; }
