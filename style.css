@@ -14,11 +14,10 @@ body { background-color: var(--bg-dark); color: var(--text); font-family: 'Segoe
 .close-banner { position: absolute; right: 15px; top: 5px; background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; }
 
 /* MODAIS */
-.auth-overlay { position: fixed; inset: 0; background: radial-gradient(circle, #222 0%, #000 100%); display: flex; align-items: center; justify-content: center; z-index: 10000; }
-.auth-card { background: var(--bg-card); padding: 40px; border-radius: 15px; text-align: center; width: 90%; max-width: 380px; border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,1); position: relative;}
-.close-modal { position: absolute; top: 15px; right: 15px; background: none; border: none; color: #fff; font-size: 1.5rem; cursor: pointer; }
-.auth-card input { width: 100%; padding: 12px; margin: 10px 0; background: #222; border: 1px solid #444; color: white; border-radius: 6px; outline: none; }
-.btn-primary { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase;}
+.auth-overlay { position: fixed; inset: 0; background: #000; display: flex; align-items: center; justify-content: center; z-index: 10000; }
+.auth-card { background: var(--bg-card); padding: 40px; border-radius: 15px; text-align: center; width: 90%; max-width: 380px; border: 1px solid #333; box-shadow: 0 0 100px rgba(229, 9, 20, 0.2); position: relative;}
+.auth-card input { width: 100%; padding: 12px; margin: 8px 0; background: #222; border: 1px solid #444; color: white; border-radius: 6px; outline: none; }
+.btn-primary { background: var(--primary); color: white; padding: 12px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%; text-transform: uppercase; margin-top: 5px;}
 
 /* HEADER */
 header {

@@ -17,7 +17,7 @@ let currentS = 1, currentE = 1, watchHistory = [], favorites = [];
 
 let myUserId = localStorage.getItem('gs_userid') || ('user_' + sessionKey);
 localStorage.setItem('gs_userid', myUserId);
-let myNickname = localStorage.getItem('gs_nickname') || 'Convidado ' + Math.floor(Math.random() * 10000);
+let myNickname = localStorage.getItem('gs_nickname') || null;
 
 window.onload = () => {
     auth.onAuthStateChanged(async (user) => {
@@ -32,31 +32,62 @@ window.onload = () => {
             sessionRef.onDisconnect().remove();
 
             currentUser = user; isAdmin = (user.email === 'adm@hotmail.com');
-            document.getElementById('loginBtn').classList.add('hidden');
-            document.getElementById('userProfileBtn').classList.remove('hidden');
             if (isAdmin) document.getElementById('adminBtn').classList.remove('hidden');
+            
             const snap = await db.ref(`users/${user.uid}/profile`).once('value');
             if (snap.exists() && snap.val().username) {
                 myNickname = snap.val().username;
-                document.getElementById('displayUserName').innerText = myNickname;
-            } else { document.getElementById('profileModal').classList.remove('hidden'); }
+                unlockSite();
+            } else { 
+                // Se logou mas não tem apelido no DB, usa o e-mail temporariamente
+                myNickname = user.email.split('@')[0];
+                unlockSite();
+            }
             syncUserData();
+        } else if (myNickname) {
+            // Se não está logado no Firebase, mas já escolheu um apelido localmente
+            unlockSite();
+            loadLocalData();
         } else {
-            currentUser = null; isAdmin = false; registerOnline(); loadLocalData();
+            // Bloqueado: Sem login e sem apelido
+            document.getElementById('authModal').classList.remove('hidden');
+            document.getElementById('catalogContent').classList.add('hidden');
         }
     });
-    listenToChat(); listenToBroadcast(); fetchTrending();
+    listenToChat(); listenToBroadcast();
+};
+
+function unlockSite() {
+    document.getElementById('authModal').classList.add('hidden');
+    document.getElementById('catalogContent').classList.remove('hidden');
+    document.getElementById('userProfileBtn').classList.remove('hidden');
+    document.getElementById('displayUserName').innerText = myNickname;
+    registerOnline();
+    fetchTrending();
+}
+
+window.accessAsGuest = () => {
+    const nick = document.getElementById('guestNickname').value.trim();
+    if (nick.length >= 3) {
+        myNickname = nick;
+        localStorage.setItem('gs_nickname', nick);
+        unlockSite();
+    } else {
+        alert("Escolha um apelido com pelo menos 3 letras.");
+    }
 };
 
 window.handleLogout = () => {
+    localStorage.removeItem('gs_nickname');
     if (currentUser) {
         db.ref(`users/${currentUser.uid}/active_session`).remove().then(() => {
             auth.signOut().then(() => window.location.reload());
         });
-    } else { auth.signOut().then(() => window.location.reload()); }
+    } else { window.location.reload(); }
 };
 
-// --- FIX DATA LANÇAMENTO (FUSO HORÁRIO) ---
+// --- RESTO DO CÓDIGO (TMDB E FUNCIONALIDADES) ---
+
 window.loadEpisodes = (sNum, eNum = 1) => {
     fetch(`https://api.themoviedb.org/3/tv/${currentMovieData.id}/season/${sNum}?api_key=${API_KEY}&language=pt-BR`).then(r => r.json()).then(d => {
         totalEpsInSeason = d.episodes.length;
@@ -64,7 +95,7 @@ window.loadEpisodes = (sNum, eNum = 1) => {
             let dateStr = 'Sem data';
             if (ep.air_date) {
                 const [ano, mes, dia] = ep.air_date.split('-');
-                dateStr = `${dia}/${mes}/${ano}`; // Formatação manual evita erro do dia 24/25
+                dateStr = `${dia}/${mes}/${ano}`;
             }
             const active = ep.episode_number == eNum ? 'active' : '';
             return `<button class="ep-btn ${active}" id="ep-btn-${ep.episode_number}" onclick="window.playEpisode(${sNum}, ${ep.episode_number})">
@@ -75,23 +106,19 @@ window.loadEpisodes = (sNum, eNum = 1) => {
     });
 };
 
-// --- RENDERIZAR CARDS COM NOME, TAGS E PROGRESSO ---
 function renderResults(res) {
     const grid = document.getElementById('resultsGrid'); grid.innerHTML = '';
     res.forEach(item => {
         const card = document.createElement('div'); card.className = 'movie-card';
         const poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750/111/fff?text=Sem+Capa';
-        
         let label = item.origin_country?.includes('JP') ? 'ANIME' : (item.title ? 'FILME' : 'SÉRIE');
-        const seasons = item.seasons_count ? `<div class="season-badge">${item.seasons_count} Temp.</div>` : ''; // Mostra temporadas
-        
+        const seasons = item.seasons_count ? `<div class="season-badge">${item.seasons_count} Temp.</div>` : '';
         let info = ""; 
         if (item.last_ep) {
             const [y, m, d] = item.last_ep.air_date.split('-');
             const next = item.next_ep ? `<br>Próx: ${item.next_ep.air_date.split('-').reverse().join('/')}` : '<br>Finalizado';
             info = `<div class="release-info" style="pointer-events:none;">Último: EP ${item.last_ep.episode_number} (${d}/${m}/${y})${next}</div>`;
         }
-        
         card.innerHTML = `<div class="type-badge">${label}</div>${seasons}<div class="poster-container"><img src="${poster}">${info}</div><h3 style="pointer-events:none;">${item.title || item.name}</h3>`;
         card.onclick = () => window.loadPlayer(item.id, item.title ? 'movie' : 'tv', item.title || item.name, poster);
         grid.appendChild(card);
@@ -103,7 +130,7 @@ function renderWatchHistory() {
     if (watchHistory.length > 0 && currentType !== 'favorites' && currentType !== 'admin') {
         document.getElementById('continueWatchingSection').classList.remove('hidden');
         grid.innerHTML = watchHistory.map(i => {
-            const label = i.type === 'tv' ? `ESTOU NO: T${i.s}:E${i.e}` : 'FILME'; // Progresso TX:EX
+            const label = i.type === 'tv' ? `ESTOU NO: T${i.s}:E${i.e}` : 'FILME';
             return `
             <div class="movie-card" onclick="window.loadPlayer(${i.id},'${i.type}','${i.title}','${i.poster}',${i.s},${i.e})">
                 <button class="remove-history" onclick="window.removeFromHistory(event, ${i.id})">X</button>
@@ -117,7 +144,6 @@ function renderWatchHistory() {
     } else document.getElementById('continueWatchingSection').classList.add('hidden');
 }
 
-// --- ADMIN DEBTS E OUTROS HELPERS ---
 window.renderDebts = () => {
     db.ref('admin_debts').on('value', s => {
         const list = document.getElementById('adminDebtList'), totalDisp = document.getElementById('totalDebtDisplay');
@@ -133,11 +159,10 @@ window.renderDebts = () => {
                 </div>`;
             });
         }
-        totalDisp.innerText = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`; // Soma total
+        totalDisp.innerText = `R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits: 2})}`;
     });
 };
 
-// Funções restantes omitidas por brevidade, mas devem ser mantidas conforme o script anterior
 window.playEpisode = (s, e) => { currentS = s; currentE = e; window.reloadPlayerServer(); document.querySelectorAll('.ep-btn').forEach(btn => btn.classList.remove('active')); const target = document.getElementById(`ep-btn-${e}`); if (target) target.classList.add('active'); saveHistory(currentMovieData.id, 'tv', currentMovieData.title, currentMovieData.poster, s, e); };
 async function fetchTrending() { if (currentType === 'favorites' || currentType === 'admin') return; const q = document.getElementById('searchInput').value; let url = `https://api.themoviedb.org/3/discover/${currentType.includes('movie')?'movie':'tv'}?api_key=${API_KEY}&language=pt-BR&sort_by=popularity.desc&page=${currentPage}`; if (!q && currentType === 'all') url = `https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR&page=${currentPage}`; if (q) url = `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${q}&language=pt-BR&page=${currentPage}`; if (currentType.includes('anime')) { url = `https://api.themoviedb.org/3/discover/tv?api_key=${API_KEY}&language=pt-BR&with_genres=16&with_origin_country=JP&page=${currentPage}`; if (currentType === 'anime_recent') { let lastWeek = new Date(); lastWeek.setDate(lastWeek.getDate() - 7); url += `&air_date.gte=${lastWeek.toISOString().split('T')[0]}&air_date.lte=${new Date().toISOString().split('T')[0]}`; } } const res = await fetch(url); const data = await res.json(); let detailed = await Promise.all(data.results.filter(i => i.media_type !== 'person').map(async (i) => { try { const d = await (await fetch(`https://api.themoviedb.org/3/tv/${i.id}?api_key=${API_KEY}&language=pt-BR`)).json(); i.last_ep = d.last_episode_to_air; i.next_ep = d.next_episode_to_air; i.seasons_count = d.number_of_seasons; } catch(e){} return i; })); if (currentType === 'anime_recent') detailed = detailed.filter(i => i.last_ep).sort((a,b) => new Date(b.last_ep.air_date) - new Date(a.last_ep.air_date)); renderResults(detailed); renderPagination(data.total_pages); }
 function registerOnline() { const refPath = 'online_users/' + (currentUser ? currentUser.uid : myUserId); db.ref(refPath).set({ name: myNickname, timestamp: firebase.database.ServerValue.TIMESTAMP }); db.ref(refPath).onDisconnect().remove(); db.ref('online_users').on('value', (s) => { const list = document.getElementById('onlineList'); if(list) list.innerHTML = Object.values(s.val() || {}).map(u => `<div class="online-user"><span class="online-dot"></span> ${u.name}</div>`).join(''); }); }
@@ -146,10 +171,7 @@ window.saveHistory = (id, type, title, poster, s, e) => { watchHistory = watchHi
 window.removeFromHistory = (e, id) => { e.stopPropagation(); watchHistory = watchHistory.filter(h => h.id !== id); if(currentUser) db.ref(`users/${currentUser.uid}/history`).set(watchHistory); else localStorage.setItem('gs_history', JSON.stringify(watchHistory)); renderWatchHistory(); };
 window.sendChatMessage = () => { const input = document.getElementById('chatInput'); if(input.value.trim()) { db.ref('global_chat').push({ name: myNickname, text: input.value, timestamp: firebase.database.ServerValue.TIMESTAMP }); input.value = ''; } };
 window.handleChatKey = (e) => { if(e.key === 'Enter') window.sendChatMessage(); };
-window.openAuthModal = () => document.getElementById('authModal').classList.remove('hidden');
-window.closeAuthModal = () => document.getElementById('authModal').classList.add('hidden');
-window.handleAuth = async () => { const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value; try { await auth.signInWithEmailAndPassword(e, p); window.closeAuthModal(); } catch (err) { try { await auth.createUserWithEmailAndPassword(e, p); window.closeAuthModal(); } catch (e2) { alert("Erro."); } } };
-window.saveProfile = async () => { const n = document.getElementById('newUsername').value.trim(); if (n.length >= 3 && currentUser) { await db.ref(`users/${currentUser.uid}/profile`).set({ username: n }); location.reload(); } };
+window.handleAuth = async () => { const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value; if(!e || !p) return; try { await auth.signInWithEmailAndPassword(e, p); } catch (err) { try { await auth.createUserWithEmailAndPassword(e, p); } catch (e2) { document.getElementById('authError').innerText = "Erro ao autenticar."; } } };
 window.toggleSidebar = () => { document.getElementById('sidebar').classList.toggle('closed'); document.querySelector('main').classList.toggle('sidebar-closed'); };
 window.backToHome = () => { document.getElementById('catalogContent').classList.remove('hidden'); document.getElementById('playerSection').classList.add('hidden'); document.getElementById('mainPlayer').src = ""; renderWatchHistory(); };
 window.setSearchType = (t, el) => { currentType = t; currentPage = 1; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); if(el) el.classList.add('active'); document.getElementById('adminSection').classList.add('hidden'); document.getElementById('catalogContent').classList.remove('hidden'); fetchTrending(); };
@@ -157,7 +179,6 @@ window.openAdminPanel = () => { if(!isAdmin) return; currentType = 'admin'; docu
 window.hideAdminSubpages = () => { document.getElementById('debtsPageView').classList.add('hidden'); document.getElementById('usersPageView').classList.add('hidden'); document.getElementById('adminMainView').classList.remove('hidden'); };
 window.showDebtsPage = () => { document.getElementById('adminMainView').classList.add('hidden'); document.getElementById('debtsPageView').classList.remove('hidden'); window.renderDebts(); };
 window.showUsersPage = () => { document.getElementById('adminMainView').classList.add('hidden'); document.getElementById('usersPageView').classList.remove('hidden'); renderAdminFullUserList(); };
-window.adminRenameUser = (uid) => { const n = prompt("Novo nome:"); if(n) db.ref(`online_users/${uid}`).update({name: n}); };
 window.adminClearChat = () => { if(confirm("Limpar chat?")) db.ref('global_chat').remove(); };
 window.triggerBroadcastPrompt = () => { const m = prompt("Aviso (10s):"); if(m) db.ref('admin_broadcast').set({active: true, message: m}); };
 window.addDebt = () => { const n = document.getElementById('debtName').value, v = document.getElementById('debtValue').value, p = document.getElementById('debtPriority').value; if(n && v) db.ref('admin_debts').push({name: n, value: v, priority: parseInt(p)}).then(() => { document.getElementById('debtName').value = ''; document.getElementById('debtValue').value = ''; window.showDebtsPage(); }); };
