@@ -19,11 +19,19 @@ let myUserId = localStorage.getItem('gs_userid') || ('user_' + sessionKey);
 localStorage.setItem('gs_userid', myUserId);
 let myNickname = localStorage.getItem('gs_nickname') || 'Convidado ' + Math.floor(Math.random() * 10000);
 
+// Helper para evitar XSS (Injeção de código)
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.innerText = text;
+    return div.innerHTML;
+}
+
 window.onload = () => {
     // Iniciar com a sidebar fechada no mobile
     if (window.innerWidth <= 900) {
-        document.getElementById('sidebar').classList.remove('open');
-        document.getElementById('sidebar').classList.add('closed');
+        document.getElementById('sidebar')?.classList.remove('open');
+        document.getElementById('sidebar')?.classList.add('closed');
     }
 
     auth.onAuthStateChanged(async (user) => {
@@ -38,14 +46,17 @@ window.onload = () => {
             sessionRef.onDisconnect().remove();
 
             currentUser = user; isAdmin = (user.email === 'adm@hotmail.com');
-            document.getElementById('loginBtn').classList.add('hidden');
-            document.getElementById('userProfileBtn').classList.remove('hidden');
-            if (isAdmin) document.getElementById('adminBtn').classList.remove('hidden');
+            document.getElementById('loginBtn')?.classList.add('hidden');
+            document.getElementById('userProfileBtn')?.classList.remove('hidden');
+            if (isAdmin) document.getElementById('adminBtn')?.classList.remove('hidden');
             const snap = await db.ref(`users/${user.uid}/profile`).once('value');
             if (snap.exists() && snap.val().username) {
                 myNickname = snap.val().username;
-                document.getElementById('displayUserName').innerText = myNickname;
-            } else { document.getElementById('profileModal').classList.remove('hidden'); }
+                const displayElem = document.getElementById('displayUserName');
+                if (displayElem) displayElem.innerText = myNickname;
+            } else { 
+                document.getElementById('profileModal')?.classList.remove('hidden'); 
+            }
             syncUserData();
         } else {
             currentUser = null; isAdmin = false; registerOnline(); loadLocalData();
@@ -54,23 +65,26 @@ window.onload = () => {
     listenToChat(); listenToBroadcast(); fetchTrending();
 };
 
-// UX: Fechar sidebar no mobile automaticamente
 function autoCloseSidebarOnMobile() {
     if (window.innerWidth <= 900) {
-        document.getElementById('sidebar').classList.remove('open');
-        document.getElementById('sidebar').classList.add('closed');
-        document.querySelector('main').classList.remove('sidebar-closed');
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.remove('open');
+            sidebar.classList.add('closed');
+        }
+        document.querySelector('main')?.classList.remove('sidebar-closed');
     }
 }
 
 window.toggleSidebar = () => {
     const sidebar = document.getElementById('sidebar');
+    if (!sidebar) return;
     if (window.innerWidth <= 900) {
         sidebar.classList.toggle('open');
         sidebar.classList.toggle('closed');
     } else {
         sidebar.classList.toggle('closed');
-        document.querySelector('main').classList.toggle('sidebar-closed');
+        document.querySelector('main')?.classList.toggle('sidebar-closed');
     }
 };
 
@@ -86,8 +100,11 @@ window.loadEpisodes = (sNum, eNum = 1) => {
     fetch(`https://api.themoviedb.org/3/tv/${currentMovieData.id}/season/${sNum}?api_key=${API_KEY}&language=pt-BR`)
     .then(r => r.json())
     .then(d => {
+        if (!d.episodes) return;
         totalEpsInSeason = d.episodes.length;
-        document.getElementById('episodeList').innerHTML = d.episodes.map(ep => {
+        const listElem = document.getElementById('episodeList');
+        if (!listElem) return;
+        listElem.innerHTML = d.episodes.map(ep => {
             let dateStr = 'Sem data';
             if (ep.air_date) {
                 const [ano, mes, dia] = ep.air_date.split('-');
@@ -103,7 +120,9 @@ window.loadEpisodes = (sNum, eNum = 1) => {
 };
 
 function renderResults(res) {
-    const grid = document.getElementById('resultsGrid'); grid.innerHTML = '';
+    const grid = document.getElementById('resultsGrid'); 
+    if (!grid) return; 
+    grid.innerHTML = '';
     res.forEach(item => {
         const card = document.createElement('div'); card.className = 'movie-card';
         const poster = item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : 'https://via.placeholder.com/500x750/111/fff?text=Sem+Capa';
@@ -118,7 +137,8 @@ function renderResults(res) {
             info = `<div class="release-info" style="pointer-events:none;">Último: EP ${item.last_ep.episode_number} (${d}/${m}/${y})${next}</div>`;
         }
         
-        card.innerHTML = `<div class="type-badge">${label}</div>${seasons}<div class="poster-container"><img src="${poster}">${info}</div><h3 style="pointer-events:none;">${item.title || item.name}</h3>`;
+        const titleSafe = escapeHtml(item.title || item.name);
+        card.innerHTML = `<div class="type-badge">${label}</div>${seasons}<div class="poster-container"><img src="${poster}">${info}</div><h3 style="pointer-events:none;">${titleSafe}</h3>`;
         card.onclick = () => window.loadPlayer(item.id, item.title ? 'movie' : 'tv', item.title || item.name, poster);
         grid.appendChild(card);
     });
@@ -126,10 +146,12 @@ function renderResults(res) {
 
 function renderWatchHistory() {
     const grid = document.getElementById('historyGrid');
+    if (!grid) return;
     if (watchHistory.length > 0 && currentType !== 'favorites' && currentType !== 'admin') {
-        document.getElementById('continueWatchingSection').classList.remove('hidden');
+        document.getElementById('continueWatchingSection')?.classList.remove('hidden');
         grid.innerHTML = watchHistory.map(i => {
             const label = i.type === 'tv' ? `ESTOU NO: T${i.s}:E${i.e}` : 'FILME'; 
+            const titleSafe = escapeHtml(i.title);
             return `
             <div class="movie-card" onclick="window.loadPlayer(${i.id},'${i.type}','${i.title}','${i.poster}',${i.s},${i.e})">
                 <button class="remove-history" onclick="window.removeFromHistory(event, ${i.id})">X</button>
@@ -137,23 +159,25 @@ function renderWatchHistory() {
                     <img src="${i.poster}">
                     <div class="release-info" style="background: rgba(229,9,20,0.95); color: white; pointer-events: none; font-weight: bold;">${label}</div>
                 </div>
-                <h3 style="pointer-events: none;">${i.title}</h3>
+                <h3 style="pointer-events: none;">${titleSafe}</h3>
             </div>`;
         }).join('');
-    } else document.getElementById('continueWatchingSection').classList.add('hidden');
+    } else document.getElementById('continueWatchingSection')?.classList.add('hidden');
 }
 
 window.renderDebts = () => {
     db.ref('admin_debts').on('value', s => {
         const list = document.getElementById('adminDebtList'), totalDisp = document.getElementById('totalDebtDisplay');
+        if (!list || !totalDisp) return;
         let total = 0; list.innerHTML = '';
         if(s.exists()) {
             const arr = Object.entries(s.val()).map(([id, d]) => ({id, ...d})).sort((a,b) => (b.priority || 0) - (a.priority || 0));
             arr.forEach(d => {
                 const val = parseFloat(String(d.value).replace(',','.')) || 0; total += val;
                 let color = d.priority == 3 ? '#e50914' : (d.priority == 2 ? '#f1c40f' : '#3498db');
+                const nameSafe = escapeHtml(d.name);
                 list.innerHTML += `<div class="admin-user-row" style="border-left: 6px solid ${color};">
-                    <div><b>${d.name}</b><br><span style="color:#2ecc71; font-weight:900">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
+                    <div><b>${nameSafe}</b><br><span style="color:#2ecc71; font-weight:900">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
                     <button onclick="window.removeDebt('${d.id}')" style="background:#e74c3c; border:none; padding:8px; border-radius:4px; cursor:pointer; color:white;">DELETAR</button>
                 </div>`;
             });
@@ -162,10 +186,10 @@ window.renderDebts = () => {
     });
 };
 
-window.openTicketModal = () => document.getElementById('ticketModal').classList.remove('hidden');
-window.closeTicketModal = () => document.getElementById('ticketModal').classList.add('hidden');
+window.openTicketModal = () => document.getElementById('ticketModal')?.classList.remove('hidden');
+window.closeTicketModal = () => document.getElementById('ticketModal')?.classList.add('hidden');
 window.submitTicket = () => {
-    const msg = document.getElementById('ticketMessage').value.trim();
+    const msg = document.getElementById('ticketMessage')?.value.trim();
     if (!msg) return alert('Por favor, descreva o problema antes de enviar.');
     db.ref('tickets').push({
         user: myNickname,
@@ -174,30 +198,34 @@ window.submitTicket = () => {
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
         alert('Seu ticket foi enviado para a administração com sucesso!');
-        document.getElementById('ticketMessage').value = '';
+        const inputElem = document.getElementById('ticketMessage');
+        if (inputElem) inputElem.value = '';
         window.closeTicketModal();
     });
 };
 
 window.showTicketsPage = () => {
-    document.getElementById('adminMainView').classList.add('hidden');
-    document.getElementById('ticketsPageView').classList.remove('hidden');
+    document.getElementById('adminMainView')?.classList.add('hidden');
+    document.getElementById('ticketsPageView')?.classList.remove('hidden');
     window.renderTickets();
 };
 
 window.renderTickets = () => {
     db.ref('tickets').on('value', s => {
         const list = document.getElementById('adminTicketList');
+        if (!list) return;
         list.innerHTML = '';
         if(s.exists()) {
             const arr = Object.entries(s.val()).map(([id, d]) => ({id, ...d})).sort((a,b) => b.timestamp - a.timestamp);
             arr.forEach(t => {
                 const date = new Date(t.timestamp).toLocaleString('pt-BR');
+                const userSafe = escapeHtml(t.user);
+                const msgSafe = escapeHtml(t.message);
                 list.innerHTML += `<div class="admin-user-row" style="border-left: 6px solid #9b59b6; flex-direction:column; gap:10px; align-items:flex-start;">
                     <div style="width:100%; display:flex; justify-content:space-between; border-bottom:1px solid #333; padding-bottom:10px;">
-                        <b>${t.user}</b> <span style="font-size:0.7rem; color:#888;">${date}</span>
+                        <b>${userSafe}</b> <span style="font-size:0.7rem; color:#888;">${date}</span>
                     </div>
-                    <p style="font-size:0.9rem; color:#ccc; word-break:break-word; width: 100%;">${t.message}</p>
+                    <p style="font-size:0.9rem; color:#ccc; word-break:break-word; width: 100%;">${msgSafe}</p>
                     <button onclick="window.resolveTicket('${t.id}')" style="background:#27ae60; border:none; padding:8px; border-radius:4px; cursor:pointer; color:white; width:100%; font-weight:bold;">MARCAR COMO RESOLVIDO</button>
                 </div>`;
             });
@@ -222,7 +250,7 @@ window.playEpisode = (s, e) => {
 
 async function fetchTrending() { 
     if (currentType === 'favorites' || currentType === 'admin') return; 
-    const q = document.getElementById('searchInput').value; 
+    const q = document.getElementById('searchInput')?.value || ''; 
     let url = `https://api.themoviedb.org/3/discover/${currentType.includes('movie')?'movie':'tv'}?api_key=${API_KEY}&language=pt-BR&sort_by=popularity.desc&page=${currentPage}`; 
     if (!q && currentType === 'all') url = `https://api.themoviedb.org/3/trending/all/week?api_key=${API_KEY}&language=pt-BR&page=${currentPage}`; 
     if (q) url = `https://api.themoviedb.org/3/search/multi?api_key=${API_KEY}&query=${q}&language=pt-BR&page=${currentPage}`; 
@@ -234,7 +262,7 @@ async function fetchTrending() {
         } 
     } 
     const res = await fetch(url); const data = await res.json(); 
-    let detailed = await Promise.all(data.results.filter(i => i.media_type !== 'person').map(async (i) => { 
+    let detailed = await Promise.all((data.results || []).filter(i => i.media_type !== 'person').map(async (i) => { 
         try { 
             const d = await (await fetch(`https://api.themoviedb.org/3/tv/${i.id}?api_key=${API_KEY}&language=pt-BR`)).json(); 
             i.last_ep = d.last_episode_to_air; i.next_ep = d.next_episode_to_air; i.seasons_count = d.number_of_seasons; 
@@ -242,7 +270,7 @@ async function fetchTrending() {
         return i; 
     })); 
     if (currentType === 'anime_recent') detailed = detailed.filter(i => i.last_ep).sort((a,b) => new Date(b.last_ep.air_date) - new Date(a.last_ep.air_date)); 
-    renderResults(detailed); renderPagination(data.total_pages); 
+    renderResults(detailed); renderPagination(data.total_pages || 1); 
 }
 
 function registerOnline() { 
@@ -251,75 +279,188 @@ function registerOnline() {
     db.ref(refPath).onDisconnect().remove(); 
     db.ref('online_users').on('value', (s) => { 
         const list = document.getElementById('onlineList'); 
-        if(list) list.innerHTML = Object.values(s.val() || {}).map(u => `<div class="online-user"><span class="online-dot"></span> ${u.name}</div>`).join(''); 
+        if(list) list.innerHTML = Object.values(s.val() || {}).map(u => `<div class="online-user"><span class="online-dot"></span> ${escapeHtml(u.name)}</div>`).join(''); 
     }); 
 }
 
 window.loadPlayer = (id, type, title, poster, s=1, e=1) => { 
     autoCloseSidebarOnMobile();
     currentMovieData = {id, type, title, poster}; currentS = s; currentE = e; 
-    document.getElementById('catalogContent').classList.add('hidden'); 
-    document.getElementById('playerSection').classList.remove('hidden'); 
-    document.getElementById('videoTitle').innerText = title; 
+    document.getElementById('catalogContent')?.classList.add('hidden'); 
+    document.getElementById('playerSection')?.classList.remove('hidden'); 
+    
+    const titleElem = document.getElementById('videoTitle');
+    if (titleElem) titleElem.innerText = title; 
     
     if (type === 'tv') { 
-        document.getElementById('seriesNavigation').classList.remove('hidden'); 
-        document.getElementById('nextEpBtn').classList.remove('hidden'); 
+        document.getElementById('seriesNavigation')?.classList.remove('hidden'); 
+        document.getElementById('nextEpBtn')?.classList.remove('hidden'); 
         fetch(`https://api.themoviedb.org/3/tv/${id}?api_key=${API_KEY}&language=pt-BR`).then(r => r.json()).then(d => { 
-            document.getElementById('seasonSelect').innerHTML = d.seasons.filter(sea => sea.season_number > 0).map(sea => `<option value="${sea.season_number}" ${sea.season_number == s ? 'selected' : ''}>Temporada ${sea.season_number}</option>`).join(''); 
+            if (!d.seasons) return;
+            const selectElem = document.getElementById('seasonSelect');
+            if (selectElem) selectElem.innerHTML = d.seasons.filter(sea => sea.season_number > 0).map(sea => `<option value="${sea.season_number}" ${sea.season_number == s ? 'selected' : ''}>Temporada ${sea.season_number}</option>`).join(''); 
             window.loadEpisodes(s, e); 
         }); 
     } else { 
-        document.getElementById('seriesNavigation').classList.add('hidden'); 
-        document.getElementById('nextEpBtn').classList.add('hidden'); 
+        document.getElementById('seriesNavigation')?.classList.add('hidden'); 
+        document.getElementById('nextEpBtn')?.classList.add('hidden'); 
         window.reloadPlayerServer(); saveHistory(id, type, title, poster, 1, 1); 
     } 
 };
 
 window.saveHistory = (id, type, title, poster, s, e) => { watchHistory = watchHistory.filter(h => h.id !== id); watchHistory.unshift({id, type, title, poster, s, e}); if(currentUser) db.ref(`users/${currentUser.uid}/history`).set(watchHistory.slice(0,8)); else localStorage.setItem('gs_history', JSON.stringify(watchHistory.slice(0,8))); renderWatchHistory(); };
 window.removeFromHistory = (e, id) => { e.stopPropagation(); watchHistory = watchHistory.filter(h => h.id !== id); if(currentUser) db.ref(`users/${currentUser.uid}/history`).set(watchHistory); else localStorage.setItem('gs_history', JSON.stringify(watchHistory)); renderWatchHistory(); };
-window.sendChatMessage = () => { const input = document.getElementById('chatInput'); if(input.value.trim()) { db.ref('global_chat').push({ name: myNickname, text: input.value, timestamp: firebase.database.ServerValue.TIMESTAMP }); input.value = ''; } };
+
+window.sendChatMessage = () => { 
+    const input = document.getElementById('chatInput'); 
+    if(input && input.value.trim()) { 
+        db.ref('global_chat').push({ name: myNickname, text: input.value.trim(), timestamp: firebase.database.ServerValue.TIMESTAMP }); 
+        input.value = ''; 
+    } 
+};
+
 window.handleChatKey = (e) => { if(e.key === 'Enter') window.sendChatMessage(); };
-window.openAuthModal = () => document.getElementById('authModal').classList.remove('hidden');
-window.closeAuthModal = () => document.getElementById('authModal').classList.add('hidden');
-window.handleAuth = async () => { const e = document.getElementById('authEmail').value, p = document.getElementById('authPassword').value; try { await auth.signInWithEmailAndPassword(e, p); window.closeAuthModal(); } catch (err) { try { await auth.createUserWithEmailAndPassword(e, p); window.closeAuthModal(); } catch (e2) { alert("Erro."); } } };
-window.saveProfile = async () => { const n = document.getElementById('newUsername').value.trim(); if (n.length >= 3 && currentUser) { await db.ref(`users/${currentUser.uid}/profile`).set({ username: n }); location.reload(); } };
-window.backToHome = () => { document.getElementById('catalogContent').classList.remove('hidden'); document.getElementById('playerSection').classList.add('hidden'); document.getElementById('mainPlayer').src = ""; renderWatchHistory(); };
+window.openAuthModal = () => document.getElementById('authModal')?.classList.remove('hidden');
+window.closeAuthModal = () => document.getElementById('authModal')?.classList.add('hidden');
+
+// Função de autenticação com suporte a login e criação
+window.handleAuth = async () => { 
+    const e = document.getElementById('authEmail')?.value.trim();
+    const p = document.getElementById('authPassword')?.value.trim(); 
+
+    if (!e || !p) {
+        alert("Preencha e-mail e senha!");
+        return;
+    }
+
+    try { 
+        await auth.signInWithEmailAndPassword(e, p); 
+        window.closeAuthModal(); 
+    } catch (err) { 
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            try {
+                await auth.createUserWithEmailAndPassword(e, p);
+                window.closeAuthModal();
+                alert("Nova conta cadastrada com sucesso!");
+            } catch (createErr) {
+                alert("Erro ao criar conta: " + createErr.message);
+            }
+        } else {
+            alert("Erro no login: " + err.message);
+        }
+    } 
+};
+
+window.saveProfile = async () => { const n = document.getElementById('newUsername')?.value.trim(); if (n && n.length >= 3 && currentUser) { await db.ref(`users/${currentUser.uid}/profile`).set({ username: n }); location.reload(); } };
+window.backToHome = () => { document.getElementById('catalogContent')?.classList.remove('hidden'); document.getElementById('playerSection')?.classList.add('hidden'); const player = document.getElementById('mainPlayer'); if(player) player.src = ""; renderWatchHistory(); };
 
 window.setSearchType = (t, el) => { 
     currentType = t; currentPage = 1; 
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); 
     if(el) el.classList.add('active'); 
-    document.getElementById('adminSection').classList.add('hidden'); 
-    document.getElementById('catalogContent').classList.remove('hidden'); 
+    document.getElementById('adminSection')?.classList.add('hidden'); 
+    document.getElementById('catalogContent')?.classList.remove('hidden'); 
     autoCloseSidebarOnMobile();
     fetchTrending(); 
 };
 
-window.openAdminPanel = () => { if(!isAdmin) return; currentType = 'admin'; document.getElementById('adminBtn').classList.add('active'); document.getElementById('adminSection').classList.remove('hidden'); document.getElementById('adminMainView').classList.remove('hidden'); document.getElementById('debtsPageView').classList.add('hidden'); document.getElementById('usersPageView').classList.add('hidden'); document.getElementById('ticketsPageView').classList.add('hidden'); autoCloseSidebarOnMobile(); };
-window.hideAdminSubpages = () => { document.getElementById('debtsPageView').classList.add('hidden'); document.getElementById('usersPageView').classList.add('hidden'); document.getElementById('ticketsPageView').classList.add('hidden'); document.getElementById('adminMainView').classList.remove('hidden'); };
-window.showDebtsPage = () => { document.getElementById('adminMainView').classList.add('hidden'); document.getElementById('debtsPageView').classList.remove('hidden'); window.renderDebts(); };
-window.showUsersPage = () => { document.getElementById('adminMainView').classList.add('hidden'); document.getElementById('usersPageView').classList.remove('hidden'); renderAdminFullUserList(); };
+window.openAdminPanel = () => { if(!isAdmin) return; currentType = 'admin'; document.getElementById('adminBtn')?.classList.add('active'); document.getElementById('adminSection')?.classList.remove('hidden'); document.getElementById('adminMainView')?.classList.remove('hidden'); document.getElementById('debtsPageView')?.classList.add('hidden'); document.getElementById('usersPageView')?.classList.add('hidden'); document.getElementById('ticketsPageView')?.classList.add('hidden'); autoCloseSidebarOnMobile(); };
+window.hideAdminSubpages = () => { document.getElementById('debtsPageView')?.classList.add('hidden'); document.getElementById('usersPageView')?.classList.add('hidden'); document.getElementById('ticketsPageView')?.classList.add('hidden'); document.getElementById('adminMainView')?.classList.remove('hidden'); };
+window.showDebtsPage = () => { document.getElementById('adminMainView')?.classList.add('hidden'); document.getElementById('debtsPageView')?.classList.remove('hidden'); window.renderDebts(); };
+window.showUsersPage = () => { document.getElementById('adminMainView')?.classList.add('hidden'); document.getElementById('usersPageView')?.classList.remove('hidden'); renderAdminFullUserList(); };
 window.adminRenameUser = (uid) => { const n = prompt("Novo nome:"); if(n) db.ref(`online_users/${uid}`).update({name: n}); };
 window.adminClearChat = () => { if(confirm("Limpar chat?")) db.ref('global_chat').remove(); };
 window.triggerBroadcastPrompt = () => { const m = prompt("Aviso (10s):"); if(m) db.ref('admin_broadcast').set({active: true, message: m}); };
-window.addDebt = () => { const n = document.getElementById('debtName').value, v = document.getElementById('debtValue').value, p = document.getElementById('debtPriority').value; if(n && v) db.ref('admin_debts').push({name: n, value: v, priority: parseInt(p)}).then(() => { document.getElementById('debtName').value = ''; document.getElementById('debtValue').value = ''; window.showDebtsPage(); }); };
+window.addDebt = () => { const n = document.getElementById('debtName')?.value, v = document.getElementById('debtValue')?.value, p = document.getElementById('debtPriority')?.value; if(n && v) db.ref('admin_debts').push({name: n, value: v, priority: parseInt(p)}).then(() => { if(document.getElementById('debtName')) document.getElementById('debtName').value = ''; if(document.getElementById('debtValue')) document.getElementById('debtValue').value = ''; window.showDebtsPage(); }); };
 window.removeDebt = (id) => { if(confirm("Deletar conta?")) db.ref(`admin_debts/${id}`).remove(); };
-window.reloadPlayerServer = () => { const srv = document.getElementById('serverSelect').value, id = currentMovieData.id; let url = srv === 'superflix' ? `https://superflixapi.help/${currentMovieData.type === 'movie' ? 'filme' : 'serie'}/${id}` : `https://embed.su/embed/${currentMovieData.type === 'movie' ? 'movie' : 'tv'}/${id}`; if (currentMovieData.type === 'tv') url += `/${currentS}/${currentE}`; document.getElementById('mainPlayer').src = url; };
+
+// Player otimizado via Blob HTML para evitar rolagem de tela no mobile
+window.reloadPlayerServer = () => { 
+    const srvElem = document.getElementById('serverSelect');
+    if (!srvElem) return;
+    const srv = srvElem.value;
+    const id = currentMovieData.id; 
+    let targetUrl = srv === 'superflix' ? `https://superflixapi.help/${currentMovieData.type === 'movie' ? 'filme' : 'serie'}/${id}` : `https://embed.su/embed/${currentMovieData.type === 'movie' ? 'movie' : 'tv'}/${id}`; 
+    if (currentMovieData.type === 'tv') targetUrl += `/${currentS}/${currentE}`; 
+
+    const blobHtml = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta name="referrer" content="no-referrer">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+            <style>
+                * { box-sizing: border-box; }
+                html, body { margin:0; padding:0; width:100%; height:100%; background:#000; overflow:hidden; }
+                iframe { width:100%; height:100%; border:0; display:block; }
+            </style>
+        </head>
+        <body>
+            <iframe src="${targetUrl}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+        </body>
+        </html>
+    `;
+
+    const blob = new Blob([blobHtml], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    const playerElem = document.getElementById('mainPlayer');
+    if (playerElem) playerElem.src = blobUrl;
+};
+
 window.playNextEpisode = () => { if (currentE < totalEpsInSeason) window.playEpisode(currentS, currentE + 1); };
 
-function listenToChat() { db.ref('global_chat').limitToLast(40).on('value', s => { const box = document.getElementById('chatMessages'); if(box) box.innerHTML = Object.values(s.val() || {}).map(m => `<div class="msg"><b>${m.name}:</b> ${m.text}</div>`).join(''); if(box) box.scrollTop = box.scrollHeight; }); }
-function listenToBroadcast() { db.ref('admin_broadcast').on('value', (s) => { const banner = document.getElementById('broadcastBanner'); if(s.exists() && s.val().active) { document.getElementById('broadcastText').innerText = "⚠️ " + s.val().message; banner.classList.remove('hidden'); setTimeout(() => { banner.classList.add('hidden'); if(isAdmin) db.ref('admin_broadcast').update({active: false}); }, 10000); } else { banner.classList.add('hidden'); } }); }
+// Chat com higienização anti-XSS
+function listenToChat() { 
+    db.ref('global_chat').limitToLast(40).on('value', s => { 
+        const box = document.getElementById('chatMessages'); 
+        if(!box) return;
+        box.innerHTML = Object.values(s.val() || {}).map(m => {
+            const safeName = escapeHtml(m.name || 'Anônimo');
+            const safeText = escapeHtml(m.text || '');
+            return `<div class="msg"><b>${safeName}:</b> ${safeText}</div>`;
+        }).join(''); 
+        box.scrollTop = box.scrollHeight; 
+    }); 
+}
+
+function listenToBroadcast() { db.ref('admin_broadcast').on('value', (s) => { const banner = document.getElementById('broadcastBanner'); if (!banner) return; if(s.exists() && s.val().active) { const txtElem = document.getElementById('broadcastText'); if (txtElem) txtElem.innerText = "⚠️ " + s.val().message; banner.classList.remove('hidden'); setTimeout(() => { banner.classList.add('hidden'); if(isAdmin) db.ref('admin_broadcast').update({active: false}); }, 10000); } else { banner.classList.add('hidden'); } }); }
 function syncUserData() { db.ref(`users/${currentUser.uid}/history`).on('value', s => { watchHistory = s.val() || []; renderWatchHistory(); }); db.ref(`users/${currentUser.uid}/favorites`).on('value', s => { favorites = s.val() || []; if(currentType === 'favorites') renderFavorites(); }); }
 function loadLocalData() { watchHistory = JSON.parse(localStorage.getItem('gs_history')) || []; favorites = JSON.parse(localStorage.getItem('gs_favorites')) || []; renderWatchHistory(); }
-function renderFavorites() { const grid = document.getElementById('resultsGrid'); grid.innerHTML = favorites.length ? '' : '<p style="padding:20px">Vazio.</p>'; favorites.forEach(i => { const card = document.createElement('div'); card.className = 'movie-card'; card.innerHTML = `<img src="${i.poster}"><h3>${i.title}</h3>`; card.onclick = () => window.loadPlayer(i.id, i.type, i.title, i.poster); grid.appendChild(card); }); }
+
+function renderFavorites() { 
+    const grid = document.getElementById('resultsGrid'); 
+    if(!grid) return; 
+    grid.innerHTML = favorites.length ? '' : '<p style="padding:20px">Vazio.</p>'; 
+    favorites.forEach(i => { 
+        const card = document.createElement('div'); 
+        card.className = 'movie-card'; 
+        const titleSafe = escapeHtml(i.title);
+        card.innerHTML = `<img src="${i.poster}"><h3>${titleSafe}</h3>`; 
+        card.onclick = () => window.loadPlayer(i.id, i.type, i.title, i.poster); 
+        grid.appendChild(card); 
+    }); 
+}
+
 function updateFavBtnUI() { const btn = document.getElementById('playerFavBtn'); if(btn) btn.innerText = favorites.some(f => f.id === currentMovieData.id) ? "SALVO ❤" : "FAVORITAR"; }
 window.toggleFavoriteCurrent = () => { const idx = favorites.findIndex(f => f.id === currentMovieData.id); if (idx > -1) favorites.splice(idx, 1); else favorites.unshift(currentMovieData); if(currentUser) db.ref(`users/${currentUser.uid}/favorites`).set(favorites); else localStorage.setItem('gs_favorites', JSON.stringify(favorites)); updateFavBtnUI(); };
-window.checkAuthAction = (action, el) => { currentType = 'favorites'; document.querySelectorAll('.tab-btn').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.getElementById('adminSection').classList.add('hidden'); window.backToHome(); renderFavorites(); autoCloseSidebarOnMobile();};
+window.checkAuthAction = (action, el) => { currentType = 'favorites'; document.querySelectorAll('.tab-btn').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); document.getElementById('adminSection')?.classList.add('hidden'); window.backToHome(); renderFavorites(); autoCloseSidebarOnMobile();};
 
-function renderAdminFullUserList() { db.ref('online_users').on('value', snapshot => { const list = document.getElementById('adminUserFullList'); if(!list) return; list.innerHTML = ''; Object.entries(snapshot.val() || {}).forEach(([uid, u]) => { list.innerHTML += `<div class="admin-user-row" style="border-left:5px solid #3498db;"><b>${u.name}</b><button onclick="window.adminRenameUser('${uid}')" style="background:#3498db; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; color:white;">Renomear</button></div>`; }); }); }
+function renderAdminFullUserList() { db.ref('online_users').on('value', snapshot => { const list = document.getElementById('adminUserFullList'); if(!list) return; list.innerHTML = ''; Object.entries(snapshot.val() || {}).forEach(([uid, u]) => { const nameSafe = escapeHtml(u.name); list.innerHTML += `<div class="admin-user-row" style="border-left:5px solid #3498db;"><b>${nameSafe}</b><button onclick="window.adminRenameUser('${uid}')" style="background:#3498db; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; color:white;">Renomear</button></div>`; }); }); }
 window.changePage = (p) => { currentPage = p; window.scrollTo(0,0); fetchTrending(); };
-function renderPagination(total) { const container = document.getElementById('pagination'); if (currentType === 'favorites' || currentType === 'admin' || total <= 1) { container.innerHTML = ""; return; } let html = `<button class="page-btn" onclick="window.changePage(1)">«</button>`; for (let i = Math.max(1, currentPage-2); i <= Math.min(total, currentPage+2); i++) html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`; container.innerHTML = html + `<button class="page-btn" onclick="window.changePage(${total})">»</button>`; }
+
+function renderPagination(total) { 
+    const container = document.getElementById('pagination'); 
+    if (!container || currentType === 'favorites' || currentType === 'admin' || total <= 1) { 
+        if(container) container.innerHTML = ""; 
+        return; 
+    } 
+    let html = `<button class="page-btn" onclick="window.changePage(1)">«</button>`; 
+    for (let i = Math.max(1, currentPage-2); i <= Math.min(total, currentPage+2); i++) {
+        html += `<button class="page-btn ${i === currentPage ? 'active' : ''}" onclick="window.changePage(${i})">${i}</button>`; 
+    }
+    container.innerHTML = html + `<button class="page-btn" onclick="window.changePage(${total})">»</button>`; 
+}
+
 window.mainSearch = () => { currentPage = 1; fetchTrending(); };
 window.applyFilters = () => { currentPage = 1; fetchTrending(); };
-window.changeSeason = () => { const s = document.getElementById('seasonSelect').value; window.loadEpisodes(s, 1); };
+window.changeSeason = () => { const s = document.getElementById('seasonSelect')?.value; if(s) window.loadEpisodes(s, 1); };
