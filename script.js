@@ -19,7 +19,6 @@ let myUserId = localStorage.getItem('gs_userid') || ('user_' + sessionKey);
 localStorage.setItem('gs_userid', myUserId);
 let myNickname = localStorage.getItem('gs_nickname') || 'Convidado ' + Math.floor(Math.random() * 10000);
 
-// Helper para evitar XSS (Injeção de código)
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -28,7 +27,6 @@ function escapeHtml(text) {
 }
 
 window.onload = () => {
-    // Iniciar com a sidebar fechada no mobile
     if (window.innerWidth <= 900) {
         document.getElementById('sidebar')?.classList.remove('open');
         document.getElementById('sidebar')?.classList.add('closed');
@@ -62,8 +60,30 @@ window.onload = () => {
             currentUser = null; isAdmin = false; registerOnline(); loadLocalData();
         }
     });
-    listenToChat(); listenToBroadcast(); fetchTrending();
+    listenToChat(); listenToBroadcast(); fetchTrending(); fetchLastUpdate();
 };
+
+async function fetchLastUpdate() {
+    const badge = document.getElementById('lastUpdateBadge');
+    if (!badge) return;
+    try {
+        const response = await fetch('https://api.github.com/repos/RamboFetBB/RamboFetBB.github.io/commits?per_page=1');
+        const data = await response.json();
+        if (data && data[0] && data[0].commit) {
+            const commitDate = new Date(data[0].commit.committer.date);
+            const dia = String(commitDate.getDate()).padStart(2, '0');
+            const mes = String(commitDate.getMonth() + 1).padStart(2, '0');
+            const ano = commitDate.getFullYear();
+            const horas = String(commitDate.getHours()).padStart(2, '0');
+            const minutos = String(commitDate.getMinutes()).padStart(2, '0');
+            badge.innerText = `v: ${dia}/${mes}/${ano} ${horas}:${minutos}`;
+        } else {
+            badge.innerText = '';
+        }
+    } catch (e) {
+        badge.innerText = '';
+    }
+}
 
 function autoCloseSidebarOnMobile() {
     if (window.innerWidth <= 900) {
@@ -105,10 +125,10 @@ window.loadEpisodes = (sNum, eNum = 1) => {
         const listElem = document.getElementById('episodeList');
         if (!listElem) return;
         listElem.innerHTML = d.episodes.map(ep => {
-            let dateStr = 'Sem data';
+            let dateStr = '';
             if (ep.air_date) {
                 const [ano, mes, dia] = ep.air_date.split('-');
-                dateStr = `${dia}/${mes}/${ano}`; 
+                dateStr = `${dia}/${mes}`; 
             }
             const active = ep.episode_number == eNum ? 'active' : '';
             return `<button class="ep-btn ${active}" id="ep-btn-${ep.episode_number}" onclick="window.playEpisode(${sNum}, ${ep.episode_number})">
@@ -292,7 +312,7 @@ window.loadPlayer = (id, type, title, poster, s=1, e=1) => {
     const titleElem = document.getElementById('videoTitle');
     if (titleElem) titleElem.innerText = title; 
     
-    // Rola a tela suavemente para o topo (focando perfeitamente no player)
+    // Rola direto para o topo para alinhar o player perfeitamente no celular
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     if (type === 'tv') { 
@@ -326,7 +346,6 @@ window.handleChatKey = (e) => { if(e.key === 'Enter') window.sendChatMessage(); 
 window.openAuthModal = () => document.getElementById('authModal')?.classList.remove('hidden');
 window.closeAuthModal = () => document.getElementById('authModal')?.classList.add('hidden');
 
-// Função de autenticação com suporte a login e criação
 window.handleAuth = async () => { 
     const e = document.getElementById('authEmail')?.value.trim();
     const p = document.getElementById('authPassword')?.value.trim(); 
@@ -377,7 +396,6 @@ window.triggerBroadcastPrompt = () => { const m = prompt("Aviso (10s):"); if(m) 
 window.addDebt = () => { const n = document.getElementById('debtName')?.value, v = document.getElementById('debtValue')?.value, p = document.getElementById('debtPriority')?.value; if(n && v) db.ref('admin_debts').push({name: n, value: v, priority: parseInt(p)}).then(() => { if(document.getElementById('debtName')) document.getElementById('debtName').value = ''; if(document.getElementById('debtValue')) document.getElementById('debtValue').value = ''; window.showDebtsPage(); }); };
 window.removeDebt = (id) => { if(confirm("Deletar conta?")) db.ref(`admin_debts/${id}`).remove(); };
 
-// Player otimizado via Blob HTML para evitar rolagem de tela no mobile
 window.reloadPlayerServer = () => { 
     const srvElem = document.getElementById('serverSelect');
     if (!srvElem) return;
@@ -412,7 +430,6 @@ window.reloadPlayerServer = () => {
 
 window.playNextEpisode = () => { if (currentE < totalEpsInSeason) window.playEpisode(currentS, currentE + 1); };
 
-// Chat com higienização anti-XSS
 function listenToChat() { 
     db.ref('global_chat').limitToLast(40).on('value', s => { 
         const box = document.getElementById('chatMessages'); 
