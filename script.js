@@ -62,10 +62,9 @@ window.onload = () => {
         }
     });
     listenToChat(); listenToBroadcast(); fetchTrending(); fetchLastUpdate();
-    loadCustomLayouts(); // Carrega os tamanhos salvos pelo utilizador via engrenagem
+    loadCustomLayouts();
 };
 
-// BUSCA A DATA E HORA DO ÚLTIMO COMMIT NO GITHUB
 async function fetchLastUpdate() {
     const badge = document.getElementById('lastUpdateBadge');
     if (!badge) return;
@@ -88,7 +87,7 @@ async function fetchLastUpdate() {
     }
 }
 
-// LÓGICA DAS ENGRENAGENS DE AJUSTE INDIVIDUAL
+// Funções globais das engrenagens garantidas no objeto window
 window.openLayoutAdjust = (targetId, name) => {
     currentAdjustTargetId = targetId;
     const elem = document.getElementById(targetId);
