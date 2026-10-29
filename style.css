@@ -27,8 +27,10 @@ header {
     padding: 15px 3%; position: sticky; top: 0; z-index: 5000; border-bottom: 1px solid rgba(255,255,255,0.1);
     flex-wrap: wrap; gap: 15px;
 }
+.logo-container { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
 .logo { font-size: 1.6rem; font-weight: 900; cursor: pointer; text-transform: uppercase; white-space: nowrap;}
 .logo span { color: var(--primary); }
+.last-update-badge { font-size: 0.7rem; color: #888; font-weight: bold; white-space: nowrap; }
 
 .tabs { display: flex; gap: 5px; align-items: center; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 5px;}
 .tabs::-webkit-scrollbar { height: 4px; }
@@ -81,24 +83,26 @@ main.sidebar-closed { margin-right: 0; }
 .release-info { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(229, 9, 20, 0.95); color: white; font-size: 0.65rem; padding: 6px 2px; text-align: center; font-weight: bold; z-index: 5; pointer-events: none;}
 .remove-history { position: absolute; top: 8px; left: 8px; background: var(--primary); color: white; border: none; border-radius: 4px; padding: 2px 8px; z-index: 20; font-weight: bold; cursor: pointer;}
 
-/* PLAYER */
+/* PLAYER REESTRUTURADO */
 .player-view { max-width: 1200px; margin: 0 auto; padding-bottom: 50px; }
-.player-controls-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: #111; padding: 15px; border-radius: 10px; border: 1px solid #333; flex-wrap: wrap; gap: 10px;}
+.player-controls-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; background: #111; padding: 12px; border-radius: 10px; border: 1px solid #333; flex-wrap: wrap; gap: 10px;}
 .player-controls-left { display: flex; gap: 10px; flex-wrap: wrap;}
-.btn-back { background: #333; color: #fff; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; }
-.btn-next-ep { background: #2ecc71; color: #000; padding: 10px 20px; border-radius: 6px; font-weight: 900; cursor: pointer; border: none;}
-.btn-fav { background: #e50914; color: #fff; padding: 10px 20px; border-radius: 6px; font-weight: 900; cursor: pointer; border: none;}
+.btn-back { background: #333; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+.btn-next-ep { background: #2ecc71; color: #000; padding: 8px 16px; border-radius: 6px; font-weight: 900; cursor: pointer; border: none;}
+.btn-fav { background: #e50914; color: #fff; padding: 8px 16px; border-radius: 6px; font-weight: 900; cursor: pointer; border: none;}
 
-.video-info-centered { display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 15px;}
-.server-options { display: flex; align-items: center; gap: 10px; background: #111; padding: 10px; border-radius: 8px;}
-.series-nav { display: flex; flex-direction: column; gap: 10px; flex: 1; background: #111; padding: 10px; border-radius: 8px;}
-
-.episode-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; max-height: 220px; overflow-y: auto; padding-right: 5px;}
-.ep-btn { background: #1a1a1a; border: 1px solid #333; color: white; padding: 10px; border-radius: 6px; cursor: pointer; text-align: center; transition: 0.2s;}
-.ep-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: bold; }
-
-.player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; border: 2px solid #222; }
+/* CONTAINER DO PLAYER COMPACTO */
+.player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 10px; overflow: hidden; border: 2px solid #222; margin-bottom: 15px; }
 iframe { width: 100%; height: 100%; border: none; }
+
+.video-info-centered { display: flex; flex-direction: column; gap: 15px; margin-top: 10px; }
+.server-options { display: flex; align-items: center; gap: 10px; background: #111; padding: 10px; border-radius: 8px;}
+.series-nav { display: flex; flex-direction: column; gap: 10px; background: #111; padding: 10px; border-radius: 8px;}
+
+/* EPISÓDIOS COM ROLAGEM HORIZONTAL COMPACTA NO MOBILE PARA NÃO EMPURRAR O PLAYER */
+.episode-list { display: flex; gap: 8px; overflow-x: auto; padding: 5px 0; scrollbar-width: thin; }
+.ep-btn { min-width: 90px; background: #1a1a1a; border: 1px solid #333; color: white; padding: 8px; border-radius: 6px; cursor: pointer; text-align: center; flex-shrink: 0; font-size: 0.8rem; }
+.ep-btn.active { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: bold; }
 
 .pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 40px 0; }
 .page-btn { background: #222; border: 1px solid #444; color: #fff; padding: 8px 14px; border-radius: 6px; cursor: pointer; }
@@ -107,15 +111,10 @@ iframe { width: 100%; height: 100%; border: none; }
 .hidden { display: none !important; }
 .admin-user-row { background: #111; padding: 15px; border-radius: 5px; border: 1px solid #222; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;}
 
-/* ========================================= */
-/* RESPONSIVIDADE (CELULARES E TABLETS)      */
-/* ========================================= */
+/* RESPONSIVIDADE PARA CELULAR */
 @media (max-width: 900px) {
     main { margin-right: 0; }
-    .sidebar-right { 
-        box-shadow: -10px 0 20px rgba(0,0,0,0.8);
-        width: 300px;
-    }
+    .sidebar-right { box-shadow: -10px 0 20px rgba(0,0,0,0.8); width: 300px; }
     .sidebar-right:not(.open) { transform: translateX(100%); }
     .sidebar-right.open { transform: translateX(0); }
 }
@@ -134,17 +133,19 @@ iframe { width: 100%; height: 100%; border: none; }
     .player-controls-left { justify-content: center; width: 100%; }
     .btn-next-ep, .btn-fav, .btn-back { width: 100%; margin-bottom: 5px; }
     
-    .video-info-centered { flex-direction: column; }
-    .server-options, .series-nav { width: 100%; }
-    
-    h2#videoTitle { font-size: 1.2rem; }
+    h2#videoTitle { font-size: 1.1rem; }
     .auth-card { padding: 25px; }
+
+    /* Ajuste para caber tudo na tela vertical do celular sem scroll do vídeo */
+    .player-container {
+        max-height: 50vh;
+    }
 }
 
-/* Otimização extra para quando o celular estiver na horizontal (deitado) */
+/* MODO HORIZONTAL (LANDSCAPE) */
 @media (orientation: landscape) and (max-height: 600px) {
     .player-container {
-        height: 75vh;
+        height: 70vh;
         aspect-ratio: auto;
     }
 }
