@@ -469,6 +469,21 @@ window.handleAuth = async () => {
     } 
 };
 
+// Nova função de recuperação de palavra-passe para o Admin e Utilizadores
+window.forgotPassword = async () => {
+    const e = document.getElementById('authEmail')?.value.trim();
+    if (!e) {
+        alert("Insere primeiro o teu e-mail no campo acima!");
+        return;
+    }
+    try {
+        await auth.sendPasswordResetEmail(e);
+        alert("E-mail de recuperação enviado com sucesso! Verifica a tua caixa de entrada.");
+    } catch (err) {
+        alert("Erro ao enviar e-mail de recuperação: " + err.message);
+    }
+};
+
 window.saveProfile = async () => { const n = document.getElementById('newUsername')?.value.trim(); if (n && n.length >= 3 && currentUser) { await db.ref(`users/${currentUser.uid}/profile`).set({ username: n }); location.reload(); } };
 window.backToHome = () => { document.getElementById('catalogContent')?.classList.remove('hidden'); document.getElementById('playerSection')?.classList.add('hidden'); const player = document.getElementById('mainPlayer'); if(player) player.src = ""; renderWatchHistory(); };
 
