@@ -49,10 +49,18 @@ window.onload = () => {
             sessionRef.onDisconnect().remove();
 
             currentUser = user; 
-            isAdmin = (user.email === ADMIN_EMAIL); 
+            
+            // Verificação blindada de e-mail de admin (ignora maiúsculas e espaços)
+            const cleanEmail = user.email ? user.email.trim().toLowerCase() : '';
+            isAdmin = (cleanEmail === ADMIN_EMAIL.toLowerCase()); 
+
             document.getElementById('loginBtn')?.classList.add('hidden');
             document.getElementById('userProfileBtn')?.classList.remove('hidden');
-            if (isAdmin) document.getElementById('adminBtn')?.classList.remove('hidden');
+            
+            if (isAdmin) {
+                document.getElementById('adminBtn')?.classList.remove('hidden');
+            }
+
             const snap = await db.ref(`users/${user.uid}/profile`).once('value');
             if (snap.exists() && snap.val().username) {
                 myNickname = snap.val().username;
@@ -459,7 +467,6 @@ window.handleAuth = async () => {
         await auth.signInWithEmailAndPassword(e, p); 
         window.closeAuthModal(); 
     } catch (err) { 
-        // Alerta detalhado para sabermos exatamente o motivo caso falhe no telemóvel
         alert("Erro no login: " + err.message);
     } 
 };
