@@ -83,7 +83,7 @@ main.sidebar-closed { margin-right: 0; }
 .release-info { position: absolute; bottom: 0; left: 0; width: 100%; background: rgba(229, 9, 20, 0.95); color: white; font-size: 0.65rem; padding: 6px 2px; text-align: center; font-weight: bold; z-index: 5; pointer-events: none;}
 .remove-history { position: absolute; top: 8px; left: 8px; background: var(--primary); color: white; border: none; border-radius: 4px; padding: 2px 8px; z-index: 20; font-weight: bold; cursor: pointer;}
 
-/* PLAYER E BLOCOS COM ENGRENAGEM DE CONFIGURAÇÃO */
+/* PLAYER E BLOCOS COM ENGRENAGEM */
 .player-view { max-width: 1200px; margin: 0 auto; padding-bottom: 50px; }
 
 .player-block {
@@ -97,20 +97,19 @@ main.sidebar-closed { margin-right: 0; }
     position: absolute;
     top: 6px;
     right: 6px;
-    background: rgba(0, 0, 0, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.4);
     color: #fff;
     border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 0.9rem;
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
     cursor: pointer;
-    z-index: 100;
+    z-index: 999;
     display: flex;
     align-items: center;
     justify-content: center;
-    backdrop-filter: blur(4px);
-    transition: 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.8);
 }
 
 .gear-btn:hover {
