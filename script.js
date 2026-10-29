@@ -37,7 +37,7 @@ window.onload = () => {
             const sessionRef = db.ref(`users/${user.uid}/active_session`);
             const snapshot = await sessionRef.once('value');
             if (snapshot.exists() && snapshot.val() !== sessionKey) {
-                alert("Sessão encerrada: Logado em outro dispositivo.");
+                alert("Sessão encerrada: Sessão iniciada noutro dispositivo.");
                 auth.signOut(); return;
             }
             sessionRef.set(sessionKey);
@@ -61,6 +61,7 @@ window.onload = () => {
         }
     });
     listenToChat(); listenToBroadcast(); fetchTrending(); fetchLastUpdate();
+    initPlayerResize(); // Ativa a alça de redimensionamento do player
 };
 
 async function fetchLastUpdate() {
@@ -83,6 +84,44 @@ async function fetchLastUpdate() {
     } catch (e) {
         badge.innerText = '';
     }
+}
+
+// Função para redimensionar o player arrastando a alça
+function initPlayerResize() {
+    const handle = document.getElementById('resizeHandle');
+    const container = document.getElementById('playerBox');
+    if (!handle || !container) return;
+
+    let isResizing = false;
+    let startY = 0;
+    let startHeight = 0;
+
+    const startDrag = (e) => {
+        isResizing = true;
+        startY = e.touches ? e.touches[0].clientY : e.clientY;
+        startHeight = container.offsetHeight;
+        e.preventDefault();
+    };
+
+    const doDrag = (e) => {
+        if (!isResizing) return;
+        const currentY = e.touches ? e.touches[0].clientY : e.clientY;
+        const diffY = currentY - startY;
+        const newHeight = Math.max(220, Math.min(window.innerHeight * 0.9, startHeight + diffY));
+        container.style.height = `${newHeight}px`;
+    };
+
+    const stopDrag = () => {
+        isResizing = false;
+    };
+
+    handle.addEventListener('mousedown', startDrag);
+    window.addEventListener('mousemove', doDrag);
+    window.addEventListener('mouseup', stopDrag);
+
+    handle.addEventListener('touchstart', startDrag);
+    window.addEventListener('touchmove', doDrag);
+    window.addEventListener('touchend', stopDrag);
 }
 
 function autoCloseSidebarOnMobile() {
@@ -198,7 +237,7 @@ window.renderDebts = () => {
                 const nameSafe = escapeHtml(d.name);
                 list.innerHTML += `<div class="admin-user-row" style="border-left: 6px solid ${color};">
                     <div><b>${nameSafe}</b><br><span style="color:#2ecc71; font-weight:900">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
-                    <button onclick="window.removeDebt('${d.id}')" style="background:#e74c3c; border:none; padding:8px; border-radius:4px; cursor:pointer; color:white;">DELETAR</button>
+                    <button onclick="window.removeDebt('${d.id}')" style="background:#e74c3c; border:none; padding:8px; border-radius:4px; cursor:pointer; color:white;">APAGAR</button>
                 </div>`;
             });
         }
@@ -210,14 +249,14 @@ window.openTicketModal = () => document.getElementById('ticketModal')?.classList
 window.closeTicketModal = () => document.getElementById('ticketModal')?.classList.add('hidden');
 window.submitTicket = () => {
     const msg = document.getElementById('ticketMessage')?.value.trim();
-    if (!msg) return alert('Por favor, descreva o problema antes de enviar.');
+    if (!msg) return alert('Por favor, descreve o problema antes de enviar.');
     db.ref('tickets').push({
         user: myNickname,
         uid: currentUser ? currentUser.uid : myUserId,
         message: msg,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
-        alert('Seu ticket foi enviado para a administração com sucesso!');
+        alert('O teu ticket foi enviado para a administração com sucesso!');
         const inputElem = document.getElementById('ticketMessage');
         if (inputElem) inputElem.value = '';
         window.closeTicketModal();
@@ -350,7 +389,7 @@ window.handleAuth = async () => {
     const p = document.getElementById('authPassword')?.value.trim(); 
 
     if (!e || !p) {
-        alert("Preencha e-mail e senha!");
+        alert("Preenche o e-mail e a palavra-passe!");
         return;
     }
 
@@ -362,7 +401,7 @@ window.handleAuth = async () => {
             try {
                 await auth.createUserWithEmailAndPassword(e, p);
                 window.closeAuthModal();
-                alert("Nova conta cadastrada com sucesso!");
+                alert("Nova conta criada com sucesso!");
             } catch (createErr) {
                 alert("Erro ao criar conta: " + createErr.message);
             }
@@ -393,7 +432,7 @@ window.adminRenameUser = (uid) => { const n = prompt("Novo nome:"); if(n) db.ref
 window.adminClearChat = () => { if(confirm("Limpar chat?")) db.ref('global_chat').remove(); };
 window.triggerBroadcastPrompt = () => { const m = prompt("Aviso (10s):"); if(m) db.ref('admin_broadcast').set({active: true, message: m}); };
 window.addDebt = () => { const n = document.getElementById('debtName')?.value, v = document.getElementById('debtValue')?.value, p = document.getElementById('debtPriority')?.value; if(n && v) db.ref('admin_debts').push({name: n, value: v, priority: parseInt(p)}).then(() => { if(document.getElementById('debtName')) document.getElementById('debtName').value = ''; if(document.getElementById('debtValue')) document.getElementById('debtValue').value = ''; window.showDebtsPage(); }); };
-window.removeDebt = (id) => { if(confirm("Deletar conta?")) db.ref(`admin_debts/${id}`).remove(); };
+window.removeDebt = (id) => { if(confirm("Apagar conta?")) db.ref(`admin_debts/${id}`).remove(); };
 
 window.reloadPlayerServer = () => { 
     const srvElem = document.getElementById('serverSelect');
@@ -434,7 +473,7 @@ function listenToChat() {
         const box = document.getElementById('chatMessages'); 
         if(!box) return;
         box.innerHTML = Object.values(s.val() || {}).map(m => {
-            const safeName = escapeHtml(m.name || 'Anônimo');
+            const safeName = escapeHtml(m.name || 'Anónimo');
             const safeText = escapeHtml(m.text || '');
             return `<div class="msg"><b>${safeName}:</b> ${safeText}</div>`;
         }).join(''); 
