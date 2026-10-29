@@ -14,6 +14,7 @@ let currentUser = null, isAdmin = false, sessionKey = Math.random().toString(36)
 let currentType = 'all', currentPage = 1, totalEpsInSeason = 0;
 let currentMovieData = { id: null, type: null, title: null, poster: null };
 let currentS = 1, currentE = 1, watchHistory = [], favorites = [];
+let currentAdjustTargetId = null;
 
 let myUserId = localStorage.getItem('gs_userid') || ('user_' + sessionKey);
 localStorage.setItem('gs_userid', myUserId);
@@ -61,9 +62,10 @@ window.onload = () => {
         }
     });
     listenToChat(); listenToBroadcast(); fetchTrending(); fetchLastUpdate();
-    initPlayerResize(); // Ativa a alça de redimensionamento do player
+    loadCustomLayouts(); // Carrega os tamanhos salvos pelo utilizador via engrenagem
 };
 
+// BUSCA A DATA E HORA DO ÚLTIMO COMMIT NO GITHUB
 async function fetchLastUpdate() {
     const badge = document.getElementById('lastUpdateBadge');
     if (!badge) return;
@@ -86,42 +88,99 @@ async function fetchLastUpdate() {
     }
 }
 
-// Função para redimensionar o player arrastando a alça
-function initPlayerResize() {
-    const handle = document.getElementById('resizeHandle');
-    const container = document.getElementById('playerBox');
-    if (!handle || !container) return;
+// LÓGICA DAS ENGRENAGENS DE AJUSTE INDIVIDUAL
+window.openLayoutAdjust = (targetId, name) => {
+    currentAdjustTargetId = targetId;
+    const elem = document.getElementById(targetId);
+    if (!elem) return;
 
-    let isResizing = false;
-    let startY = 0;
-    let startHeight = 0;
+    const titleElem = document.getElementById('adjustTargetName');
+    if (titleElem) titleElem.innerText = `Ajustar: ${name}`;
+    
+    const saved = JSON.parse(localStorage.getItem(`gs_layout_${targetId}`)) || {};
+    
+    let targetElem = elem;
+    if (targetId === 'block-player') {
+        targetElem = document.getElementById('playerBox') || elem;
+    }
 
-    const startDrag = (e) => {
-        isResizing = true;
-        startY = e.touches ? e.touches[0].clientY : e.clientY;
-        startHeight = container.offsetHeight;
-        e.preventDefault();
-    };
+    document.getElementById('inputHeight').value = saved.height || targetElem.offsetHeight || 200;
+    document.getElementById('inputPadding').value = saved.padding || 10;
+    document.getElementById('inputFont').value = saved.font || 100;
 
-    const doDrag = (e) => {
-        if (!isResizing) return;
-        const currentY = e.touches ? e.touches[0].clientY : e.clientY;
-        const diffY = currentY - startY;
-        const newHeight = Math.max(220, Math.min(window.innerHeight * 0.9, startHeight + diffY));
-        container.style.height = `${newHeight}px`;
-    };
+    window.previewLayoutChange();
+    document.getElementById('layoutAdjustModal')?.classList.remove('hidden');
+};
 
-    const stopDrag = () => {
-        isResizing = false;
-    };
+window.closeLayoutAdjust = () => {
+    document.getElementById('layoutAdjustModal')?.classList.add('hidden');
+};
 
-    handle.addEventListener('mousedown', startDrag);
-    window.addEventListener('mousemove', doDrag);
-    window.addEventListener('mouseup', stopDrag);
+window.previewLayoutChange = () => {
+    if (!currentAdjustTargetId) return;
+    const elem = document.getElementById(currentAdjustTargetId);
+    if (!elem) return;
 
-    handle.addEventListener('touchstart', startDrag);
-    window.addEventListener('touchmove', doDrag);
-    window.addEventListener('touchend', stopDrag);
+    const h = document.getElementById('inputHeight').value;
+    const p = document.getElementById('inputPadding').value;
+    const f = document.getElementById('inputFont').value;
+
+    document.getElementById('valHeight').innerText = `${h}px`;
+    document.getElementById('valPadding').innerText = `${p}px`;
+    document.getElementById('valFont').innerText = `${f}%`;
+
+    if (currentAdjustTargetId === 'block-player') {
+        const box = document.getElementById('playerBox');
+        if (box) box.style.height = `${h}px`;
+    } else {
+        elem.style.height = `${h}px`;
+    }
+    elem.style.padding = `${p}px`;
+    elem.style.fontSize = `${f}%`;
+};
+
+window.saveLayoutAdjust = () => {
+    if (!currentAdjustTargetId) return;
+    const h = document.getElementById('inputHeight').value;
+    const p = document.getElementById('inputPadding').value;
+    const f = document.getElementById('inputFont').value;
+
+    const config = { height: h, padding: p, font: f };
+    localStorage.setItem(`gs_layout_${currentAdjustTargetId}`, JSON.stringify(config));
+    window.closeLayoutAdjust();
+};
+
+window.resetLayoutAdjust = () => {
+    if (!currentAdjustTargetId) return;
+    localStorage.removeItem(`gs_layout_${currentAdjustTargetId}`);
+    const elem = document.getElementById(currentAdjustTargetId);
+    if (elem) {
+        elem.style.height = '';
+        elem.style.padding = '';
+        elem.style.fontSize = '';
+        const box = document.getElementById('playerBox');
+        if (box && currentAdjustTargetId === 'block-player') box.style.height = '';
+    }
+    window.closeLayoutAdjust();
+};
+
+function loadCustomLayouts() {
+    ['block-controls', 'block-player', 'block-server', 'block-episodes'].forEach(id => {
+        const saved = JSON.parse(localStorage.getItem(`gs_layout_${id}`));
+        if (saved) {
+            const elem = document.getElementById(id);
+            if (elem) {
+                if (id === 'block-player') {
+                    const box = document.getElementById('playerBox');
+                    if (box && saved.height) box.style.height = `${saved.height}px`;
+                } else if (saved.height) {
+                    elem.style.height = `${saved.height}px`;
+                }
+                if (saved.padding) elem.style.padding = `${saved.padding}px`;
+                if (saved.font) elem.style.fontSize = `${saved.font}%`;
+            }
+        }
+    });
 }
 
 function autoCloseSidebarOnMobile() {
