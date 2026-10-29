@@ -2,28 +2,25 @@ const firebaseConfig = {
     apiKey: "AIzaSyDAxrnM2jXCJ5A0nh3o7i_cgfooeGxO1Bo",
     authDomain: "cassi-8787c.firebaseapp.com",
     databaseURL: "https://cassi-8787c-default-rtdb.firebaseio.com",
-    projectId: "cassi-8787c",
-    storageBucket: "cassi-8787c.appspot.com",
-    messagingSenderId: "885933740584",
-    appId: "1:885933740584:web:d0d885a0fb2e3f67095b1d"
+    projectId: "cassi-8787c"
 };
 
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 const API_KEY = '673e9c9f4b85ae41be022ec08483d650';
-const ADMIN_EMAIL = 'rambofet@hotmail.com';
+const ADMIN_EMAIL = 'adm@hotmail.com';
 
 let currentUser = null, isAdmin = false, sessionKey = Math.random().toString(36).substr(2, 9);
 let currentType = 'all', currentPage = 1, totalEpsInSeason = 0;
 let currentMovieData = { id: null, type: null, title: null, poster: null };
 let currentS = 1, currentE = 1, watchHistory = [], favorites = [];
-let currentAdjustTargetId = null;
 
 let myUserId = localStorage.getItem('gs_userid') || ('user_' + sessionKey);
 localStorage.setItem('gs_userid', myUserId);
 let myNickname = localStorage.getItem('gs_nickname') || 'Convidado ' + Math.floor(Math.random() * 10000);
 
+// Helper para evitar XSS (Injeção de código)
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -32,25 +29,26 @@ function escapeHtml(text) {
 }
 
 window.onload = () => {
+    // Iniciar com a sidebar fechada no mobile
     if (window.innerWidth <= 900) {
         document.getElementById('sidebar')?.classList.remove('open');
         document.getElementById('sidebar')?.classList.add('closed');
     }
 
-    // Aplicação da interface normal para Admin por localização
+    // Validação do Bypass de Administrador por Geolocalização
     if (localStorage.getItem('gs_admin_bypass') === 'true') {
         isAdmin = true;
-        myNickname = localStorage.getItem('gs_nickname') || 'Administrador';
+        myNickname = 'Administrador';
         
-        const loginBtn = document.getElementById('loginBtn');
-        const userProfileBtn = document.getElementById('userProfileBtn');
-        const adminBtn = document.getElementById('adminBtn');
+        document.getElementById('loginBtn')?.classList.add('hidden');
+        document.getElementById('userProfileBtn')?.classList.remove('hidden');
+        document.getElementById('adminBtn')?.classList.remove('hidden');
+        
         const displayElem = document.getElementById('displayUserName');
-
-        if (loginBtn) loginBtn.classList.add('hidden');
-        if (userProfileBtn) userProfileBtn.classList.remove('hidden');
-        if (adminBtn) adminBtn.classList.remove('hidden');
         if (displayElem) displayElem.innerText = myNickname;
+
+        registerOnline();
+        loadLocalData();
     }
 
     auth.onAuthStateChanged(async (user) => {
@@ -58,26 +56,19 @@ window.onload = () => {
             const sessionRef = db.ref(`users/${user.uid}/active_session`);
             const snapshot = await sessionRef.once('value');
             if (snapshot.exists() && snapshot.val() !== sessionKey) {
-                alert("Sessão encerrada: Sessão iniciada noutro dispositivo.");
+                alert("Sessão encerrada: Logado em outro dispositivo.");
                 auth.signOut(); return;
             }
             sessionRef.set(sessionKey);
             sessionRef.onDisconnect().remove();
 
             currentUser = user; 
+            isAdmin = (user.email === ADMIN_EMAIL || localStorage.getItem('gs_admin_bypass') === 'true');
             
-            const cleanEmail = user.email ? user.email.trim().toLowerCase() : '';
-            if (cleanEmail === ADMIN_EMAIL.toLowerCase()) {
-                isAdmin = true;
-            }
-
             document.getElementById('loginBtn')?.classList.add('hidden');
             document.getElementById('userProfileBtn')?.classList.remove('hidden');
+            if (isAdmin) document.getElementById('adminBtn')?.classList.remove('hidden');
             
-            if (isAdmin) {
-                document.getElementById('adminBtn')?.classList.remove('hidden');
-            }
-
             const snap = await db.ref(`users/${user.uid}/profile`).once('value');
             if (snap.exists() && snap.val().username) {
                 myNickname = snap.val().username;
@@ -89,129 +80,14 @@ window.onload = () => {
             syncUserData();
         } else if (!localStorage.getItem('gs_admin_bypass')) {
             currentUser = null; isAdmin = false; registerOnline(); loadLocalData();
-        } else {
-            registerOnline(); loadLocalData();
         }
     });
-    listenToChat(); listenToBroadcast(); fetchTrending(); fetchLastUpdate();
-    loadCustomLayouts();
+
+    // Garante que o catálogo, chat e avisos carregam sempre na perfeição
+    listenToChat(); 
+    listenToBroadcast(); 
+    fetchTrending();
 };
-
-async function fetchLastUpdate() {
-    const badge = document.getElementById('lastUpdateBadge');
-    if (!badge) return;
-    try {
-        const response = await fetch('https://api.github.com/repos/RamboFetBB/RamboFetBB.github.io/commits?per_page=1');
-        const data = await response.json();
-        if (data && data[0] && data[0].commit) {
-            const commitDate = new Date(data[0].commit.committer.date);
-            const dia = String(commitDate.getDate()).padStart(2, '0');
-            const mes = String(commitDate.getMonth() + 1).padStart(2, '0');
-            const ano = commitDate.getFullYear();
-            const horas = String(commitDate.getHours()).padStart(2, '0');
-            const minutos = String(commitDate.getMinutes()).padStart(2, '0');
-            badge.innerText = `v: ${dia}/${mes}/${ano} ${horas}:${minutos}`;
-        } else {
-            badge.innerText = '';
-        }
-    } catch (e) {
-        badge.innerText = '';
-    }
-}
-
-window.openLayoutAdjust = (targetId, name) => {
-    currentAdjustTargetId = targetId;
-    const elem = document.getElementById(targetId);
-    if (!elem) return;
-
-    const titleElem = document.getElementById('adjustTargetName');
-    if (titleElem) titleElem.innerText = `Ajustar: ${name}`;
-    
-    const saved = JSON.parse(localStorage.getItem(`gs_layout_${targetId}`)) || {};
-    
-    let targetElem = elem;
-    if (targetId === 'block-player') {
-        targetElem = document.getElementById('playerBox') || elem;
-    }
-
-    document.getElementById('inputHeight').value = saved.height || targetElem.offsetHeight || 200;
-    document.getElementById('inputPadding').value = saved.padding || 10;
-    document.getElementById('inputFont').value = saved.font || 100;
-
-    window.previewLayoutChange();
-    document.getElementById('layoutAdjustModal')?.classList.remove('hidden');
-};
-
-window.closeLayoutAdjust = () => {
-    document.getElementById('layoutAdjustModal')?.classList.add('hidden');
-};
-
-window.previewLayoutChange = () => {
-    if (!currentAdjustTargetId) return;
-    const elem = document.getElementById(currentAdjustTargetId);
-    if (!elem) return;
-
-    const h = document.getElementById('inputHeight').value;
-    const p = document.getElementById('inputPadding').value;
-    const f = document.getElementById('inputFont').value;
-
-    document.getElementById('valHeight').innerText = `${h}px`;
-    document.getElementById('valPadding').innerText = `${p}px`;
-    document.getElementById('valFont').innerText = `${f}%`;
-
-    if (currentAdjustTargetId === 'block-player') {
-        const box = document.getElementById('playerBox');
-        if (box) box.style.height = `${h}px`;
-    } else {
-        elem.style.height = `${h}px`;
-    }
-    elem.style.padding = `${p}px`;
-    elem.style.fontSize = `${f}%`;
-};
-
-window.saveLayoutAdjust = () => {
-    if (!currentAdjustTargetId) return;
-    const h = document.getElementById('inputHeight').value;
-    const p = document.getElementById('inputPadding').value;
-    const f = document.getElementById('inputFont').value;
-
-    const config = { height: h, padding: p, font: f };
-    localStorage.setItem(`gs_layout_${currentAdjustTargetId}`, JSON.stringify(config));
-    window.closeLayoutAdjust();
-};
-
-window.resetLayoutAdjust = () => {
-    if (!currentAdjustTargetId) return;
-    localStorage.removeItem(`gs_layout_${currentAdjustTargetId}`);
-    const elem = document.getElementById(currentAdjustTargetId);
-    if (elem) {
-        elem.style.height = '';
-        elem.style.padding = '';
-        elem.style.fontSize = '';
-        const box = document.getElementById('playerBox');
-        if (box && currentAdjustTargetId === 'block-player') box.style.height = '';
-    }
-    window.closeLayoutAdjust();
-};
-
-function loadCustomLayouts() {
-    ['block-controls', 'block-player', 'block-server', 'block-episodes'].forEach(id => {
-        const saved = JSON.parse(localStorage.getItem(`gs_layout_${id}`));
-        if (saved) {
-            const elem = document.getElementById(id);
-            if (elem) {
-                if (id === 'block-player') {
-                    const box = document.getElementById('playerBox');
-                    if (box && saved.height) box.style.height = `${saved.height}px`;
-                } else if (saved.height) {
-                    elem.style.height = `${saved.height}px`;
-                }
-                if (saved.padding) elem.style.padding = `${saved.padding}px`;
-                if (saved.font) elem.style.fontSize = `${saved.font}%`;
-            }
-        }
-    });
-}
 
 function autoCloseSidebarOnMobile() {
     if (window.innerWidth <= 900) {
@@ -254,10 +130,10 @@ window.loadEpisodes = (sNum, eNum = 1) => {
         const listElem = document.getElementById('episodeList');
         if (!listElem) return;
         listElem.innerHTML = d.episodes.map(ep => {
-            let dateStr = '';
+            let dateStr = 'Sem data';
             if (ep.air_date) {
                 const [ano, mes, dia] = ep.air_date.split('-');
-                dateStr = `${dia}/${mes}`; 
+                dateStr = `${dia}/${mes}/${ano}`; 
             }
             const active = ep.episode_number == eNum ? 'active' : '';
             return `<button class="ep-btn ${active}" id="ep-btn-${ep.episode_number}" onclick="window.playEpisode(${sNum}, ${ep.episode_number})">
@@ -327,7 +203,7 @@ window.renderDebts = () => {
                 const nameSafe = escapeHtml(d.name);
                 list.innerHTML += `<div class="admin-user-row" style="border-left: 6px solid ${color};">
                     <div><b>${nameSafe}</b><br><span style="color:#2ecc71; font-weight:900">R$ ${val.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span></div>
-                    <button onclick="window.removeDebt('${d.id}')" style="background:#e74c3c; border:none; padding:8px; border-radius:4px; cursor:pointer; color:white;">APAGAR</button>
+                    <button onclick="window.removeDebt('${d.id}')" style="background:#e74c3c; border:none; padding:8px; border-radius:4px; cursor:pointer; color:white;">DELETAR</button>
                 </div>`;
             });
         }
@@ -339,14 +215,14 @@ window.openTicketModal = () => document.getElementById('ticketModal')?.classList
 window.closeTicketModal = () => document.getElementById('ticketModal')?.classList.add('hidden');
 window.submitTicket = () => {
     const msg = document.getElementById('ticketMessage')?.value.trim();
-    if (!msg) return alert('Por favor, descreve o problema antes de enviar.');
+    if (!msg) return alert('Por favor, descreva o problema antes de enviar.');
     db.ref('tickets').push({
         user: myNickname,
         uid: currentUser ? currentUser.uid : myUserId,
         message: msg,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
-        alert('O teu ticket foi enviado para a administração com sucesso!');
+        alert('Seu ticket foi enviado para a administração com sucesso!');
         const inputElem = document.getElementById('ticketMessage');
         if (inputElem) inputElem.value = '';
         window.closeTicketModal();
@@ -441,8 +317,6 @@ window.loadPlayer = (id, type, title, poster, s=1, e=1) => {
     const titleElem = document.getElementById('videoTitle');
     if (titleElem) titleElem.innerText = title; 
     
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    
     if (type === 'tv') { 
         document.getElementById('seriesNavigation')?.classList.remove('hidden'); 
         document.getElementById('nextEpBtn')?.classList.remove('hidden'); 
@@ -474,64 +348,55 @@ window.handleChatKey = (e) => { if(e.key === 'Enter') window.sendChatMessage(); 
 window.openAuthModal = () => document.getElementById('authModal')?.classList.remove('hidden');
 window.closeAuthModal = () => document.getElementById('authModal')?.classList.add('hidden');
 
+// Função de autenticação com bypass direto para adm@hotmail.com via Geolocalização
 window.handleAuth = async () => { 
     const e = document.getElementById('authEmail')?.value.trim().toLowerCase();
     const p = document.getElementById('authPassword')?.value.trim(); 
 
     if (!e || !p) {
-        alert("Preenche o e-mail e a palavra-passe!");
+        alert("Preencha e-mail e senha!");
         return;
     }
 
-    // Acesso Direto de Administrador por e-mail fixo (Sem Firebase)
-    if (e === "adm@hotmail.com") {
+    // Acesso direto do Administrador validando via GPS (Sem Firebase Auth)
+    if (e === ADMIN_EMAIL) {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
                 (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    console.log(`Localização do ADM obtida: Lat ${lat}, Lon ${lon}`);
-                    
                     localStorage.setItem('gs_admin_bypass', 'true');
                     localStorage.setItem('gs_nickname', 'Administrador');
-                    
                     alert("Localização confirmada! Acesso de Administrador concedido.");
                     window.closeAuthModal();
                     window.location.reload();
                 },
                 (error) => {
-                    alert("Erro: Precisas de permitir o acesso à localização para entrar como Administrador.");
+                    alert("Erro: É necessário permitir o acesso à geolocalização para entrar como Administrador.");
                 },
                 { timeout: 10000 }
             );
         } else {
-            alert("A geolocalização não é suportada pelo teu navegador.");
+            alert("A geolocalização não é suportada por este dispositivo.");
         }
         return;
     }
 
-    // Fluxo normal para outros utilizadores via Firebase
+    // Fluxo normal para contas comuns via Firebase
     try { 
         await auth.signInWithEmailAndPassword(e, p); 
         window.closeAuthModal(); 
-        window.location.reload();
     } catch (err) { 
-        alert("Erro no login: " + err.message);
+        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+            try {
+                await auth.createUserWithEmailAndPassword(e, p);
+                window.closeAuthModal();
+                alert("Nova conta cadastrada com sucesso!");
+            } catch (createErr) {
+                alert("Erro ao criar conta: " + createErr.message);
+            }
+        } else {
+            alert("Erro no login: " + err.message);
+        }
     } 
-};
-
-window.forgotPassword = async () => {
-    const e = document.getElementById('authEmail')?.value.trim();
-    if (!e) {
-        alert("Insere primeiro o teu e-mail no campo acima!");
-        return;
-    }
-    try {
-        await auth.sendPasswordResetEmail(e);
-        alert("E-mail de recuperação enviado com sucesso! Verifica a tua caixa de entrada.");
-    } catch (err) {
-        alert("Erro ao enviar e-mail de recuperação: " + err.message);
-    }
 };
 
 window.saveProfile = async () => { const n = document.getElementById('newUsername')?.value.trim(); if (n && n.length >= 3 && currentUser) { await db.ref(`users/${currentUser.uid}/profile`).set({ username: n }); location.reload(); } };
@@ -555,8 +420,9 @@ window.adminRenameUser = (uid) => { const n = prompt("Novo nome:"); if(n) db.ref
 window.adminClearChat = () => { if(confirm("Limpar chat?")) db.ref('global_chat').remove(); };
 window.triggerBroadcastPrompt = () => { const m = prompt("Aviso (10s):"); if(m) db.ref('admin_broadcast').set({active: true, message: m}); };
 window.addDebt = () => { const n = document.getElementById('debtName')?.value, v = document.getElementById('debtValue')?.value, p = document.getElementById('debtPriority')?.value; if(n && v) db.ref('admin_debts').push({name: n, value: v, priority: parseInt(p)}).then(() => { if(document.getElementById('debtName')) document.getElementById('debtName').value = ''; if(document.getElementById('debtValue')) document.getElementById('debtValue').value = ''; window.showDebtsPage(); }); };
-window.removeDebt = (id) => { if(confirm("Apagar conta?")) db.ref(`admin_debts/${id}`).remove(); };
+window.removeDebt = (id) => { if(confirm("Deletar conta?")) db.ref(`admin_debts/${id}`).remove(); };
 
+// Player otimizado via Blob HTML para evitar rolagem de tela no mobile
 window.reloadPlayerServer = () => { 
     const srvElem = document.getElementById('serverSelect');
     if (!srvElem) return;
@@ -591,12 +457,13 @@ window.reloadPlayerServer = () => {
 
 window.playNextEpisode = () => { if (currentE < totalEpsInSeason) window.playEpisode(currentS, currentE + 1); };
 
+// Chat com higienização anti-XSS
 function listenToChat() { 
     db.ref('global_chat').limitToLast(40).on('value', s => { 
         const box = document.getElementById('chatMessages'); 
         if(!box) return;
         box.innerHTML = Object.values(s.val() || {}).map(m => {
-            const safeName = escapeHtml(m.name || 'Anónimo');
+            const safeName = escapeHtml(m.name || 'Anônimo');
             const safeText = escapeHtml(m.text || '');
             return `<div class="msg"><b>${safeName}:</b> ${safeText}</div>`;
         }).join(''); 
