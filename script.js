@@ -180,21 +180,28 @@ window.renderDebts = () => {
     });
 };
 
+// --- FUNÇÃO CORRIGIDA DE TICKETS ---
 window.openTicketModal = () => document.getElementById('ticketModal')?.classList.remove('hidden');
 window.closeTicketModal = () => document.getElementById('ticketModal')?.classList.add('hidden');
+
 window.submitTicket = () => {
     const msg = document.getElementById('ticketMessage')?.value.trim();
-    if (!msg) return alert('Por favor, descreva o problema antes de enviar.');
+    if (!msg) {
+        alert('Por favor, descreve o problema antes de enviar.');
+        return;
+    }
     db.ref('tickets').push({
         user: myNickname,
         uid: currentUser ? currentUser.uid : myUserId,
         message: msg,
         timestamp: firebase.database.ServerValue.TIMESTAMP
     }).then(() => {
-        alert('Seu ticket foi enviado para a administração com sucesso!');
+        alert('O teu ticket foi enviado para a administração com sucesso!');
         const inputElem = document.getElementById('ticketMessage');
         if (inputElem) inputElem.value = '';
         window.closeTicketModal();
+    }).catch((err) => {
+        alert('Erro ao enviar ticket: ' + err.message);
     });
 };
 
@@ -297,7 +304,7 @@ window.removeFromHistory = (e, id) => { e.stopPropagation(); watchHistory = watc
 window.openAuthModal = () => document.getElementById('authModal')?.classList.remove('hidden');
 window.closeAuthModal = () => document.getElementById('authModal')?.classList.add('hidden');
 
-// Função de autenticação com bypass por GPS para o e-mail de Administrador
+// Autenticação com suporte a login, criação de conta e bypass de GPS para adm
 window.handleAuth = async () => { 
     const e = document.getElementById('authEmail')?.value.trim().toLowerCase();
     const p = document.getElementById('authPassword')?.value.trim(); 
@@ -307,7 +314,6 @@ window.handleAuth = async () => {
         return;
     }
 
-    // Se for o e-mail do Administrador, valida por geolocalização e aplica o bypass
     if (e === ADMIN_EMAIL) {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -329,7 +335,6 @@ window.handleAuth = async () => {
         return;
     }
 
-    // Fluxo normal para outras contas via Firebase
     try { 
         await auth.signInWithEmailAndPassword(e, p); 
         window.closeAuthModal(); 
@@ -365,7 +370,27 @@ window.hideAdminSubpages = () => { document.getElementById('debtsPageView')?.cla
 window.showDebtsPage = () => { document.getElementById('adminMainView')?.classList.add('hidden'); document.getElementById('debtsPageView')?.classList.remove('hidden'); window.renderDebts(); };
 window.showUsersPage = () => { document.getElementById('adminMainView')?.classList.add('hidden'); document.getElementById('usersPageView')?.classList.remove('hidden'); renderAdminFullUserList(); };
 window.adminRenameUser = (uid) => { const n = prompt("Novo nome:"); if(n) db.ref(`online_users/${uid}`).update({name: n}); };
-window.triggerBroadcastPrompt = () => { const m = prompt("Aviso (10s):"); if(m) db.ref('admin_broadcast').set({active: true, message: m}); };
+
+// --- FUNÇÃO CORRIGIDA DE ALERTA GLOBAL (BROADCAST) ---
+window.triggerBroadcastPrompt = () => {
+    if (!isAdmin) {
+        alert("Acesso negado: Apenas o Administrador pode enviar avisos globais.");
+        return;
+    }
+    const m = prompt("Escreva o texto do aviso global (ficará visível por 10 segundos):");
+    if (m && m.trim()) {
+        db.ref('admin_broadcast').set({
+            active: true,
+            message: m.trim(),
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+        }).then(() => {
+            alert("Aviso global enviado com sucesso!");
+        }).catch((err) => {
+            alert("Erro ao enviar aviso: " + err.message);
+        });
+    }
+};
+
 window.addDebt = () => { const n = document.getElementById('debtName')?.value, v = document.getElementById('debtValue')?.value, p = document.getElementById('debtPriority')?.value; if(n && v) db.ref('admin_debts').push({name: n, value: v, priority: parseInt(p)}).then(() => { if(document.getElementById('debtName')) document.getElementById('debtName').value = ''; if(document.getElementById('debtValue')) document.getElementById('debtValue').value = ''; window.showDebtsPage(); }); };
 window.removeDebt = (id) => { if(confirm("Deletar conta?")) db.ref(`admin_debts/${id}`).remove(); };
 
@@ -404,7 +429,32 @@ window.reloadPlayerServer = () => {
 
 window.playNextEpisode = () => { if (currentE < totalEpsInSeason) window.playEpisode(currentS, currentE + 1); };
 
-function listenToBroadcast() { db.ref('admin_broadcast').on('value', (s) => { const banner = document.getElementById('broadcastBanner'); if (!banner) return; if(s.exists() && s.val().active) { const txtElem = document.getElementById('broadcastText'); if (txtElem) txtElem.innerText = "⚠️ " + s.val().message; banner.classList.remove('hidden'); setTimeout(() => { banner.classList.add('hidden'); if(isAdmin) db.ref('admin_broadcast').update({active: false}); }, 10000); } else { banner.classList.add('hidden'); } }); }
+function listenToBroadcast() { 
+    db.ref('admin_broadcast').on('value', (s) => { 
+        const banner = document.getElementById('broadcastBanner'); 
+        const txtElem = document.getElementById('broadcastText');
+        if (!banner || !txtElem) return; 
+        
+        const data = s.val();
+        if(data && data.active) { 
+            txtElem.innerText = "⚠️ " + data.message; 
+            banner.classList.remove('hidden'); 
+            setTimeout(() => { 
+                banner.classList.add('hidden'); 
+                if(isAdmin) db.ref('admin_broadcast').update({active: false}); 
+            }, 10000); 
+        } else { 
+            banner.classList.add('hidden'); 
+        } 
+    }); 
+}
+
+window.closeBroadcast = () => {
+    const banner = document.getElementById('broadcastBanner');
+    if (banner) banner.classList.add('hidden');
+    if (isAdmin) db.ref('admin_broadcast').update({ active: false });
+};
+
 function syncUserData() { db.ref(`users/${currentUser.uid}/history`).on('value', s => { watchHistory = s.val() || []; renderWatchHistory(); }); db.ref(`users/${currentUser.uid}/favorites`).on('value', s => { favorites = s.val() || []; if(currentType === 'favorites') renderFavorites(); }); }
 function loadLocalData() { watchHistory = JSON.parse(localStorage.getItem('gs_history')) || []; favorites = JSON.parse(localStorage.getItem('gs_favorites')) || []; renderWatchHistory(); }
 
