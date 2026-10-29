@@ -2,14 +2,17 @@ const firebaseConfig = {
     apiKey: "AIzaSyDAxrnM2jXCJ5A0nh3o7i_cgfooeGxO1Bo",
     authDomain: "cassi-8787c.firebaseapp.com",
     databaseURL: "https://cassi-8787c-default-rtdb.firebaseio.com",
-    projectId: "cassi-8787c"
+    projectId: "cassi-8787c",
+    storageBucket: "cassi-8787c.appspot.com",
+    messagingSenderId: "885933740584",
+    appId: "1:885933740584:web:d0d885a0fb2e3f67095b1d"
 };
 
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 const API_KEY = '673e9c9f4b85ae41be022ec08483d650';
-const ADMIN_EMAIL = 'rambofet@hotmail.com'; // Novo e-mail de administrador atualizado
+const ADMIN_EMAIL = 'rambofet@hotmail.com';
 
 let currentUser = null, isAdmin = false, sessionKey = Math.random().toString(36).substr(2, 9);
 let currentType = 'all', currentPage = 1, totalEpsInSeason = 0;
@@ -46,7 +49,7 @@ window.onload = () => {
             sessionRef.onDisconnect().remove();
 
             currentUser = user; 
-            isAdmin = (user.email === ADMIN_EMAIL); // Verificação com o novo e-mail adm
+            isAdmin = (user.email === ADMIN_EMAIL); 
             document.getElementById('loginBtn')?.classList.add('hidden');
             document.getElementById('userProfileBtn')?.classList.remove('hidden');
             if (isAdmin) document.getElementById('adminBtn')?.classList.remove('hidden');
@@ -89,7 +92,6 @@ async function fetchLastUpdate() {
     }
 }
 
-// Funções globais das engrenagens garantidas no objeto window
 window.openLayoutAdjust = (targetId, name) => {
     currentAdjustTargetId = targetId;
     const elem = document.getElementById(targetId);
