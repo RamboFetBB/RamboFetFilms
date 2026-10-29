@@ -312,7 +312,6 @@ window.loadPlayer = (id, type, title, poster, s=1, e=1) => {
     const titleElem = document.getElementById('videoTitle');
     if (titleElem) titleElem.innerText = title; 
     
-    // Rola direto para o topo para alinhar o player perfeitamente no celular
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
     if (type === 'tv') { 
