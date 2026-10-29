@@ -50,7 +50,7 @@ window.onload = () => {
 
             currentUser = user; 
             
-            // Verificação blindada de e-mail de admin (ignora maiúsculas e espaços)
+            // Verificação blindada de e-mail (ignora maiúsculas, minúsculas e espaços)
             const cleanEmail = user.email ? user.email.trim().toLowerCase() : '';
             isAdmin = (cleanEmail === ADMIN_EMAIL.toLowerCase()); 
 
@@ -466,6 +466,8 @@ window.handleAuth = async () => {
     try { 
         await auth.signInWithEmailAndPassword(e, p); 
         window.closeAuthModal(); 
+        // Força recarga imediata no telemóvel para garantir a ativação da sessão de Admin
+        window.location.reload();
     } catch (err) { 
         alert("Erro no login: " + err.message);
     } 
