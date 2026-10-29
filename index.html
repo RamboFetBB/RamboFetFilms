@@ -24,6 +24,9 @@
             <p id="authSubtitle" style="margin-bottom: 15px; font-size: 0.9rem; color: #aaa;">Acede à tua conta para salvar o progresso</p>
             <input type="email" id="authEmail" required placeholder="E-mail">
             <input type="password" id="authPassword" required placeholder="Palavra-passe">
+            <div style="text-align: right; margin-bottom: 10px;">
+                <button type="button" onclick="window.forgotPassword()" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; cursor: pointer;">Esqueci-me da palavra-passe</button>
+            </div>
             <div class="auth-actions">
                 <button id="mainAuthBtn" class="btn-primary" onclick="window.handleAuth()">Entrar / Criar Conta</button>
             </div>
