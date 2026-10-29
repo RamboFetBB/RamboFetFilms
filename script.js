@@ -459,17 +459,8 @@ window.handleAuth = async () => {
         await auth.signInWithEmailAndPassword(e, p); 
         window.closeAuthModal(); 
     } catch (err) { 
-        if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-            try {
-                await auth.createUserWithEmailAndPassword(e, p);
-                window.closeAuthModal();
-                alert("Nova conta criada com sucesso!");
-            } catch (createErr) {
-                alert("Erro ao criar conta: " + createErr.message);
-            }
-        } else {
-            alert("Erro no login: " + err.message);
-        }
+        // Alerta detalhado para sabermos exatamente o motivo caso falhe no telemóvel
+        alert("Erro no login: " + err.message);
     } 
 };
 
