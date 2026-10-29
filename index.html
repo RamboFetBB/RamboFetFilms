@@ -102,26 +102,33 @@
             </section>
         </aside>
 
-        <!-- SECÇÃO DO PLAYER COM REDIMENSIONAMENTO MANUAL -->
+        <!-- SECÇÃO DO PLAYER COM ENGRENAGENS DE CONFIGURAÇÃO POR CAIXA -->
         <div id="playerSection" class="hidden player-view">
-            <div class="player-controls-top">
-                <div class="player-controls-left">
-                    <button onclick="window.backToHome()" class="btn-back">⬅ VOLTAR</button>
-                    <button id="nextEpBtn" class="btn-next-ep hidden" onclick="window.playNextEpisode()">PRÓXIMO EPISÓDIO ➔</button>
-                </div>
-                <h2 id="videoTitle">Título</h2>
-                <button id="playerFavBtn" class="btn-fav" onclick="window.toggleFavoriteCurrent()">FAVORITAR</button>
-            </div>
-
-            <!-- CONTAINER DO PLAYER COM ALÇA DE ARRASTO -->
-            <div id="playerBox" class="player-container">
-                <iframe id="mainPlayer" src="" allowfullscreen></iframe>
-                <div id="resizeHandle" class="player-resize-handle">
-                    <span>🎚️ Arraste para ajustar o tamanho</span>
+            
+            <!-- Bloco 1: Controles e Título -->
+            <div id="block-controls" class="player-block">
+                <button class="gear-btn" onclick="window.openLayoutAdjust('block-controls', 'Controles Superiores')" title="Ajustar caixa">⚙️</button>
+                <div class="player-controls-top">
+                    <div class="player-controls-left">
+                        <button onclick="window.backToHome()" class="btn-back">⬅ VOLTAR</button>
+                        <button id="nextEpBtn" class="btn-next-ep hidden" onclick="window.playNextEpisode()">PRÓXIMO EPISÓDIO ➔</button>
+                    </div>
+                    <h2 id="videoTitle">Título</h2>
+                    <button id="playerFavBtn" class="btn-fav" onclick="window.toggleFavoriteCurrent()">FAVORITAR</button>
                 </div>
             </div>
 
-            <div class="video-info-centered">
+            <!-- Bloco 2: Vídeo (Player Container) -->
+            <div id="block-player" class="player-block">
+                <button class="gear-btn" onclick="window.openLayoutAdjust('block-player', 'Ecrã do Player')" title="Ajustar caixa">⚙️</button>
+                <div id="playerBox" class="player-container">
+                    <iframe id="mainPlayer" src="" allowfullscreen></iframe>
+                </div>
+            </div>
+
+            <!-- Bloco 3: Opções de Servidor -->
+            <div id="block-server" class="player-block">
+                <button class="gear-btn" onclick="window.openLayoutAdjust('block-server', 'Opções de Servidor')" title="Ajustar caixa">⚙️</button>
                 <div class="server-options">
                     <label>Servidor:</label>
                     <select id="serverSelect" onchange="window.reloadPlayerServer()">
@@ -129,9 +136,37 @@
                         <option value="embedsu">Servidor 2</option>
                     </select>
                 </div>
+            </div>
+
+            <!-- Bloco 4: Navegação e Lista de Episódios -->
+            <div id="block-episodes" class="player-block">
+                <button class="gear-btn" onclick="window.openLayoutAdjust('block-episodes', 'Lista de Episódios')" title="Ajustar caixa">⚙️</button>
                 <div id="seriesNavigation" class="series-nav hidden">
                     <select id="seasonSelect" class="styled-select" onchange="window.changeSeason()"></select>
                     <div id="episodeList" class="episode-list"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- MODAL PARA MOLDAR O TAMANHO E FORMATAÇÃO DA CAIXA SELECIONADA -->
+        <div id="layoutAdjustModal" class="auth-overlay hidden">
+            <div class="auth-card" style="max-width: 330px; text-align: left;">
+                <button class="close-modal" onclick="window.closeLayoutAdjust()">×</button>
+                <h3 id="adjustTargetName" style="color: var(--primary); margin-bottom: 15px;">Ajustar Caixa</h3>
+                
+                <label style="font-size: 0.8rem; color: #ccc;">Altura da Caixa: <span id="valHeight">Auto</span></label>
+                <input type="range" id="inputHeight" min="40" max="850" value="200" oninput="window.previewLayoutChange()" style="width:100%; margin: 8px 0 15px 0;">
+
+                <label style="font-size: 0.8rem; color: #ccc;">Espaçamento Interno (Padding): <span id="valPadding">10px</span></label>
+                <input type="range" id="inputPadding" min="0" max="50" value="10" oninput="window.previewLayoutChange()" style="width:100%; margin: 8px 0 15px 0;">
+
+                <label style="font-size: 0.8rem; color: #ccc;">Escala de Texto / Elementos: <span id="valFont">100%</span></label>
+                <input type="range" id="inputFont" min="60" max="150" value="100" oninput="window.previewLayoutChange()" style="width:100%; margin: 8px 0 15px 0;">
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button class="btn-primary" onclick="window.saveLayoutAdjust()">Salvar</button>
+                    <button class="btn-primary" style="background: #555;" onclick="window.resetLayoutAdjust()">Resetar</button>
                 </div>
             </div>
         </div>
