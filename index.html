@@ -21,9 +21,9 @@
         <div class="auth-card">
             <button class="close-modal" onclick="window.closeAuthModal()">×</button>
             <h1>Global<span style="color: var(--primary);">Stream</span></h1>
-            <p id="authSubtitle" style="margin-bottom: 15px; font-size: 0.9rem; color: #aaa;">Acesse sua conta para salvar progresso</p>
+            <p id="authSubtitle" style="margin-bottom: 15px; font-size: 0.9rem; color: #aaa;">Acede à tua conta para salvar o progresso</p>
             <input type="email" id="authEmail" required placeholder="E-mail">
-            <input type="password" id="authPassword" required placeholder="Senha">
+            <input type="password" id="authPassword" required placeholder="Palavra-passe">
             <div class="auth-actions">
                 <button id="mainAuthBtn" class="btn-primary" onclick="window.handleAuth()">Entrar / Criar Conta</button>
             </div>
@@ -33,8 +33,8 @@
 
     <div id="profileModal" class="auth-overlay hidden">
         <div class="auth-card">
-            <h2>Escolha seu <span style="color: var(--primary);">Apelido</span></h2>
-            <input type="text" id="newUsername" placeholder="Como quer ser chamado?">
+            <h2>Escolhe o teu <span style="color: var(--primary);">Alcunha</span></h2>
+            <input type="text" id="newUsername" placeholder="Como queres ser chamado?">
             <button class="btn-primary" style="margin-top: 15px;" onclick="window.saveProfile()">Salvar</button>
         </div>
     </div>
@@ -43,8 +43,8 @@
         <div class="auth-card">
             <button class="close-modal" onclick="window.closeTicketModal()">×</button>
             <h2>Abrir <span style="color: var(--primary);">Ticket</span></h2>
-            <p style="margin-bottom: 10px; font-size: 0.85rem; color: #aaa;">Descreva seu problema, erro ou faça um pedido.</p>
-            <textarea id="ticketMessage" placeholder="Escreva sua mensagem aqui..."></textarea>
+            <p style="margin-bottom: 10px; font-size: 0.85rem; color: #aaa;">Descreve o teu problema, erro ou faz um pedido.</p>
+            <textarea id="ticketMessage" placeholder="Escreve a tua mensagem aqui..."></textarea>
             <button class="btn-primary" style="margin-top: 10px; background: #9b59b6;" onclick="window.submitTicket()">Enviar Ticket</button>
         </div>
     </div>
@@ -52,7 +52,7 @@
     <header>
         <div class="logo-container">
             <div class="logo" onclick="window.location.reload()">Global<span>Stream</span></div>
-            <span id="lastUpdateBadge" class="last-update-badge">Atualizando...</span>
+            <span id="lastUpdateBadge" class="last-update-badge">A carregar...</span>
         </div>
         <nav class="tabs">
             <button class="tab-btn active" onclick="window.setSearchType('all', this)">Início</button>
@@ -62,18 +62,18 @@
             <button class="tab-btn" onclick="window.setSearchType('anime_recent', this)">Animes Atualizados</button>
             <button class="tab-btn" onclick="window.checkAuthAction('favorites', this)">❤ Favoritos</button>
             <button class="tab-btn" onclick="window.openTicketModal()" style="color: #9b59b6;">🎫 Suporte</button>
-            <button class="tab-btn" id="sidebarToggleBtn" onclick="window.toggleSidebar()" style="color: #ccc;">💬 Chat / Usuários</button>
+            <button class="tab-btn" id="sidebarToggleBtn" onclick="window.toggleSidebar()" style="color: #ccc;">💬 Chat / Utilizadores</button>
             <button class="tab-btn hidden" id="adminBtn" onclick="window.openAdminPanel()" style="color: #f39c12;">⚙️ Admin</button>
         </nav>
         
         <div class="search-container">
             <div class="search-bar">
                 <select id="genreSelect" onchange="window.applyFilters()">
-                    <option value="">Gêneros</option>
+                    <option value="">Géneros</option>
                     <option value="28">Ação</option><option value="12">Aventura</option>
                     <option value="16">Animação</option><option value="35">Comédia</option>
                 </select>
-                <input type="text" id="searchInput" placeholder="Buscar..." oninput="window.mainSearch()">
+                <input type="text" id="searchInput" placeholder="Pesquisar..." oninput="window.mainSearch()">
                 <button id="loginBtn" class="btn-login" onclick="window.openAuthModal()">Iniciar Sessão</button>
                 <div id="userProfileBtn" class="hidden" style="display: flex; align-items: center; gap: 10px;">
                     <span id="displayUserName" style="font-weight: bold; font-size: 0.85rem;">Perfil</span>
@@ -87,7 +87,7 @@
         <aside id="sidebar" class="sidebar-right">
             <section class="online-section">
                 <div class="sidebar-header">
-                    <h3>Usuários Online</h3>
+                    <h3>Utilizadores Online</h3>
                     <button onclick="window.toggleSidebar()" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; display: none;" class="mobile-close-sidebar">×</button>
                 </div>
                 <div id="onlineList" class="online-list"></div>
@@ -102,7 +102,7 @@
             </section>
         </aside>
 
-        <!-- SEÇÃO DO PLAYER REDESENHADA PARA CABER EM QUALQUER TELA -->
+        <!-- SECÇÃO DO PLAYER COM REDIMENSIONAMENTO MANUAL -->
         <div id="playerSection" class="hidden player-view">
             <div class="player-controls-top">
                 <div class="player-controls-left">
@@ -113,12 +113,14 @@
                 <button id="playerFavBtn" class="btn-fav" onclick="window.toggleFavoriteCurrent()">FAVORITAR</button>
             </div>
 
-            <!-- PLAYER FICA NO TOPO LOGO APÓS O TÍTULO -->
-            <div class="player-container">
+            <!-- CONTAINER DO PLAYER COM ALÇA DE ARRASTO -->
+            <div id="playerBox" class="player-container">
                 <iframe id="mainPlayer" src="" allowfullscreen></iframe>
+                <div id="resizeHandle" class="player-resize-handle">
+                    <span>🎚️ Arraste para ajustar o tamanho</span>
+                </div>
             </div>
 
-            <!-- OPÇÕES E EPISÓDIOS FICAM ABAIXO DO VÍDEO -->
             <div class="video-info-centered">
                 <div class="server-options">
                     <label>Servidor:</label>
@@ -144,8 +146,8 @@
                     
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 30px;">
                         <div>
-                            <h3>👥 Usuários</h3>
-                            <button onclick="window.showUsersPage()" class="btn-primary" style="background: #3498db; margin-top:10px;">Ver Usuários Online ➔</button>
+                            <h3>👥 Utilizadores</h3>
+                            <button onclick="window.showUsersPage()" class="btn-primary" style="background: #3498db; margin-top:10px;">Ver Utilizadores Online ➔</button>
                         </div>
                         
                         <div>
@@ -165,7 +167,7 @@
 
                         <div>
                             <h3>🎟️ Tickets de Suporte</h3>
-                            <p style="margin-top:10px; font-size:0.9rem; color:#aaa;">Verifique os pedidos e erros reportados pelos usuários.</p>
+                            <p style="margin-top:10px; font-size:0.9rem; color:#aaa;">Verifica os pedidos e erros reportados.</p>
                             <button onclick="window.showTicketsPage()" style="margin-top: 15px; color: #9b59b6; background: none; border: 1px solid #9b59b6; padding: 5px; cursor: pointer; width: 100%;">Página de Tickets ➔</button>
                         </div>
                     </div>
@@ -173,7 +175,7 @@
 
                 <div id="usersPageView" class="hidden admin-full-page" style="background:#000; padding:30px; border-radius:15px; border:2px solid #3498db;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap: wrap; gap: 10px;">
-                        <h1 style="color:#3498db;">USUÁRIOS ONLINE</h1>
+                        <h1 style="color:#3498db;">UTILIZADORES ONLINE</h1>
                         <button onclick="window.hideAdminSubpages()" class="btn-back">VOLTAR</button>
                     </div>
                     <div id="adminUserFullList" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:15px;"></div>
@@ -200,7 +202,7 @@
             </div>
 
             <div id="continueWatchingSection" class="hidden">
-                <h2 class="section-title-red">Continuar Assistindo</h2>
+                <h2 class="section-title-red">Continuar a Assistir</h2>
                 <div class="results-grid small-cards" id="historyGrid"></div>
             </div>
 
