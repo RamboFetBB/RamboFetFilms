@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#0a0a0a">
     <title>GlobalStream | Premium</title>
-    <link rel="stylesheet" href="style.css?v=3">
+    <link rel="stylesheet" href="style.css?v=4">
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -36,7 +36,7 @@
 
     <div id="profileModal" class="auth-overlay hidden">
         <div class="auth-card">
-            <h2>Escolhe o teu <span style="color: var(--primary);">Alcunha</span></h2>
+            <h2>Escolhe a tua <span style="color: var(--primary);">Alcunha</span></h2>
             <input type="text" id="newUsername" placeholder="Como queres ser chamado?">
             <button class="btn-primary" style="margin-top: 15px;" onclick="window.saveProfile()">Salvar</button>
         </div>
@@ -152,7 +152,7 @@
 
         </div>
 
-        <!-- MODAL DE AJUSTE -->
+        <!-- MODAL DE AJUSTE DE LAYOUT -->
         <div id="layoutAdjustModal" class="auth-overlay hidden" style="z-index: 99999;">
             <div class="auth-card" style="max-width: 330px; text-align: left;">
                 <button class="close-modal" onclick="window.closeLayoutAdjust()">×</button>
@@ -250,6 +250,6 @@
         </div>
     </main>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=4"></script>
 </body>
 </html>
