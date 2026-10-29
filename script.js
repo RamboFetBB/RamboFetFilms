@@ -292,6 +292,9 @@ window.loadPlayer = (id, type, title, poster, s=1, e=1) => {
     const titleElem = document.getElementById('videoTitle');
     if (titleElem) titleElem.innerText = title; 
     
+    // Rola a tela suavemente para o topo (focando perfeitamente no player)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
     if (type === 'tv') { 
         document.getElementById('seriesNavigation')?.classList.remove('hidden'); 
         document.getElementById('nextEpBtn')?.classList.remove('hidden'); 
