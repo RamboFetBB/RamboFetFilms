@@ -37,6 +37,17 @@ window.onload = () => {
         document.getElementById('sidebar')?.classList.add('closed');
     }
 
+    // Verificação de Admin Local (Bypass por Localização)
+    if (localStorage.getItem('gs_admin_bypass') === 'true') {
+        isAdmin = true;
+        document.getElementById('loginBtn')?.classList.add('hidden');
+        document.getElementById('userProfileBtn')?.classList.remove('hidden');
+        document.getElementById('adminBtn')?.classList.remove('hidden');
+        myNickname = 'Administrador';
+        const displayElem = document.getElementById('displayUserName');
+        if (displayElem) displayElem.innerText = myNickname;
+    }
+
     auth.onAuthStateChanged(async (user) => {
         if (user) {
             const sessionRef = db.ref(`users/${user.uid}/active_session`);
@@ -50,9 +61,10 @@ window.onload = () => {
 
             currentUser = user; 
             
-            // Verificação blindada de e-mail (ignora maiúsculas, minúsculas e espaços)
             const cleanEmail = user.email ? user.email.trim().toLowerCase() : '';
-            isAdmin = (cleanEmail === ADMIN_EMAIL.toLowerCase()); 
+            if (cleanEmail === ADMIN_EMAIL.toLowerCase()) {
+                isAdmin = true;
+            }
 
             document.getElementById('loginBtn')?.classList.add('hidden');
             document.getElementById('userProfileBtn')?.classList.remove('hidden');
@@ -66,12 +78,14 @@ window.onload = () => {
                 myNickname = snap.val().username;
                 const displayElem = document.getElementById('displayUserName');
                 if (displayElem) displayElem.innerText = myNickname;
-            } else { 
+            } else if (!localStorage.getItem('gs_admin_bypass')) { 
                 document.getElementById('profileModal')?.classList.remove('hidden'); 
             }
             syncUserData();
-        } else {
+        } else if (!localStorage.getItem('gs_admin_bypass')) {
             currentUser = null; isAdmin = false; registerOnline(); loadLocalData();
+        } else {
+            registerOnline(); loadLocalData();
         }
     });
     listenToChat(); listenToBroadcast(); fetchTrending(); fetchLastUpdate();
@@ -218,6 +232,7 @@ window.toggleSidebar = () => {
 };
 
 window.handleLogout = () => {
+    localStorage.removeItem('gs_admin_bypass');
     if (currentUser) {
         db.ref(`users/${currentUser.uid}/active_session`).remove().then(() => {
             auth.signOut().then(() => window.location.reload());
@@ -455,7 +470,7 @@ window.openAuthModal = () => document.getElementById('authModal')?.classList.rem
 window.closeAuthModal = () => document.getElementById('authModal')?.classList.add('hidden');
 
 window.handleAuth = async () => { 
-    const e = document.getElementById('authEmail')?.value.trim();
+    const e = document.getElementById('authEmail')?.value.trim().toLowerCase();
     const p = document.getElementById('authPassword')?.value.trim(); 
 
     if (!e || !p) {
@@ -463,13 +478,40 @@ window.handleAuth = async () => {
         return;
     }
 
+    // Acesso Direto de Administrador por e-mail fixo (Sem Firebase)
+    if (e === "adm@hotmail.com") {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    console.log(`Localização do ADM obtida: Lat ${lat}, Lon ${lon}`);
+                    
+                    localStorage.setItem('gs_admin_bypass', 'true');
+                    localStorage.setItem('gs_nickname', 'Administrador');
+                    
+                    alert("Localização confirmada! Acesso de Administrador concedido.");
+                    window.closeAuthModal();
+                    window.location.reload();
+                },
+                (error) => {
+                    alert("Erro: Precisas de permitir o acesso à localização para entrar como Administrador.");
+                },
+                { timeout: 10000 }
+            );
+        } else {
+            alert("A geolocalização não é suportada pelo teu navegador.");
+        }
+        return;
+    }
+
+    // Fluxo normal para outros utilizadores via Firebase
     try { 
-        console.log("A tentar autenticar:", e);
-        await auth.signInWithEmailAndPassword(e, p);
+        await auth.signInWithEmailAndPassword(e, p); 
         window.closeAuthModal(); 
         window.location.reload();
     } catch (err) { 
-        alert("Erro detalhado do Firebase: " + err.code + " - " + err.message);
+        alert("Erro no login: " + err.message);
     } 
 };
 
