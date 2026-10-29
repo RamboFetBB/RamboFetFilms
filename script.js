@@ -37,14 +37,19 @@ window.onload = () => {
         document.getElementById('sidebar')?.classList.add('closed');
     }
 
-    // Verificação de Admin Local (Bypass por Localização)
+    // Aplicação da interface normal para Admin por localização
     if (localStorage.getItem('gs_admin_bypass') === 'true') {
         isAdmin = true;
-        document.getElementById('loginBtn')?.classList.add('hidden');
-        document.getElementById('userProfileBtn')?.classList.remove('hidden');
-        document.getElementById('adminBtn')?.classList.remove('hidden');
-        myNickname = 'Administrador';
+        myNickname = localStorage.getItem('gs_nickname') || 'Administrador';
+        
+        const loginBtn = document.getElementById('loginBtn');
+        const userProfileBtn = document.getElementById('userProfileBtn');
+        const adminBtn = document.getElementById('adminBtn');
         const displayElem = document.getElementById('displayUserName');
+
+        if (loginBtn) loginBtn.classList.add('hidden');
+        if (userProfileBtn) userProfileBtn.classList.remove('hidden');
+        if (adminBtn) adminBtn.classList.remove('hidden');
         if (displayElem) displayElem.innerText = myNickname;
     }
 
