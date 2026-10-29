@@ -137,40 +137,39 @@ iframe { width: 100%; height: 100%; border: none; }
 
 .server-options { display: flex; align-items: center; gap: 10px; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #333;}
 
-/* BLOCO DE EPISÓDIOS COM ALTURA IDEAL POR DEFEITO */
+/* BLOCO DE EPISÓDIOS BEM GRANDE E ESPAÇOSO */
 #block-episodes {
-    height: 145px !important;
-    min-height: 130px;
+    height: auto !important;
+    min-height: 220px;
     background: #111;
-    padding: 10px;
+    padding: 12px;
     border-radius: 8px;
     border: 1px solid #333;
 }
 
-.series-nav { display: flex; flex-direction: column; gap: 10px; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #333;}
+.series-nav { display: flex; flex-direction: column; gap: 12px; background: #111; padding: 10px; border-radius: 8px; border: 1px solid #333;}
 
-/* EPISÓDIOS COM ROLAGEM HORIZONTAL E ALTURA COMPLETA */
+/* EPISÓDIOS COM ROLAGEM HORIZONTAL E BOTÕES GRANDES */
 .episode-list { 
     display: flex; 
     gap: 8px; 
     overflow-x: auto; 
-    padding: 5px 0; 
+    padding: 8px 0; 
     scrollbar-width: thin; 
-    height: calc(100% - 35px);
 }
 
 .ep-btn { 
-    min-width: 90px; 
-    height: 100%;
+    min-width: 100px; 
+    height: 65px;
     background: #1a1a1a; 
     border: 1px solid #333; 
     color: white; 
-    padding: 6px; 
+    padding: 8px; 
     border-radius: 6px; 
     cursor: pointer; 
     text-align: center; 
     flex-shrink: 0; 
-    font-size: 0.8rem; 
+    font-size: 0.85rem; 
     display: flex;
     flex-direction: column;
     justify-content: center;
