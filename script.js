@@ -9,6 +9,7 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 const API_KEY = '673e9c9f4b85ae41be022ec08483d650';
+const ADMIN_EMAIL = 'rambofet@hotmail.com'; // Novo e-mail de administrador atualizado
 
 let currentUser = null, isAdmin = false, sessionKey = Math.random().toString(36).substr(2, 9);
 let currentType = 'all', currentPage = 1, totalEpsInSeason = 0;
@@ -44,7 +45,8 @@ window.onload = () => {
             sessionRef.set(sessionKey);
             sessionRef.onDisconnect().remove();
 
-            currentUser = user; isAdmin = (user.email === 'adm@hotmail.com');
+            currentUser = user; 
+            isAdmin = (user.email === ADMIN_EMAIL); // Verificação com o novo e-mail adm
             document.getElementById('loginBtn')?.classList.add('hidden');
             document.getElementById('userProfileBtn')?.classList.remove('hidden');
             if (isAdmin) document.getElementById('adminBtn')?.classList.remove('hidden');
@@ -469,7 +471,6 @@ window.handleAuth = async () => {
     } 
 };
 
-// Nova função de recuperação de palavra-passe para o Admin e Utilizadores
 window.forgotPassword = async () => {
     const e = document.getElementById('authEmail')?.value.trim();
     if (!e) {
