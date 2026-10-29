@@ -464,12 +464,12 @@ window.handleAuth = async () => {
     }
 
     try { 
-        await auth.signInWithEmailAndPassword(e, p); 
+        console.log("A tentar autenticar:", e);
+        await auth.signInWithEmailAndPassword(e, p);
         window.closeAuthModal(); 
-        // Força recarga imediata no telemóvel para garantir a ativação da sessão de Admin
         window.location.reload();
     } catch (err) { 
-        alert("Erro no login: " + err.message);
+        alert("Erro detalhado do Firebase: " + err.code + " - " + err.message);
     } 
 };
 
