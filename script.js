@@ -9,7 +9,7 @@ if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 const auth = firebase.auth();
 const API_KEY = '673e9c9f4b85ae41be022ec08483d650';
-const ADMIN_EMAIL = 'adm@hotmail.com';
+const ADMIN_EMAIL = 'rambofet@hotmail.com';
 
 let currentUser = null, isAdmin = false, sessionKey = Math.random().toString(36).substr(2, 9);
 let currentType = 'all', currentPage = 1, totalEpsInSeason = 0;
@@ -29,12 +29,6 @@ function escapeHtml(text) {
 }
 
 window.onload = () => {
-    // Iniciar com a sidebar fechada no mobile
-    if (window.innerWidth <= 900) {
-        document.getElementById('sidebar')?.classList.remove('open');
-        document.getElementById('sidebar')?.classList.add('closed');
-    }
-
     // Validação do Bypass de Administrador por Geolocalização
     if (localStorage.getItem('gs_admin_bypass') === 'true') {
         isAdmin = true;
@@ -47,7 +41,6 @@ window.onload = () => {
         const displayElem = document.getElementById('displayUserName');
         if (displayElem) displayElem.innerText = myNickname;
 
-        registerOnline();
         loadLocalData();
     }
 
@@ -63,7 +56,8 @@ window.onload = () => {
             sessionRef.onDisconnect().remove();
 
             currentUser = user; 
-            isAdmin = (user.email === ADMIN_EMAIL || localStorage.getItem('gs_admin_bypass') === 'true');
+            const cleanEmail = user.email ? user.email.trim().toLowerCase() : '';
+            isAdmin = (cleanEmail === ADMIN_EMAIL.toLowerCase() || localStorage.getItem('gs_admin_bypass') === 'true');
             
             document.getElementById('loginBtn')?.classList.add('hidden');
             document.getElementById('userProfileBtn')?.classList.remove('hidden');
@@ -79,37 +73,12 @@ window.onload = () => {
             }
             syncUserData();
         } else if (!localStorage.getItem('gs_admin_bypass')) {
-            currentUser = null; isAdmin = false; registerOnline(); loadLocalData();
+            currentUser = null; isAdmin = false; loadLocalData();
         }
     });
 
-    // Garante que o catálogo, chat e avisos carregam sempre na perfeição
-    listenToChat(); 
     listenToBroadcast(); 
     fetchTrending();
-};
-
-function autoCloseSidebarOnMobile() {
-    if (window.innerWidth <= 900) {
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar) {
-            sidebar.classList.remove('open');
-            sidebar.classList.add('closed');
-        }
-        document.querySelector('main')?.classList.remove('sidebar-closed');
-    }
-}
-
-window.toggleSidebar = () => {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-    if (window.innerWidth <= 900) {
-        sidebar.classList.toggle('open');
-        sidebar.classList.toggle('closed');
-    } else {
-        sidebar.classList.toggle('closed');
-        document.querySelector('main')?.classList.toggle('sidebar-closed');
-    }
 };
 
 window.handleLogout = () => {
@@ -298,18 +267,7 @@ async function fetchTrending() {
     renderResults(detailed); renderPagination(data.total_pages || 1); 
 }
 
-function registerOnline() { 
-    const refPath = 'online_users/' + (currentUser ? currentUser.uid : myUserId); 
-    db.ref(refPath).set({ name: myNickname, timestamp: firebase.database.ServerValue.TIMESTAMP }); 
-    db.ref(refPath).onDisconnect().remove(); 
-    db.ref('online_users').on('value', (s) => { 
-        const list = document.getElementById('onlineList'); 
-        if(list) list.innerHTML = Object.values(s.val() || {}).map(u => `<div class="online-user"><span class="online-dot"></span> ${escapeHtml(u.name)}</div>`).join(''); 
-    }); 
-}
-
 window.loadPlayer = (id, type, title, poster, s=1, e=1) => { 
-    autoCloseSidebarOnMobile();
     currentMovieData = {id, type, title, poster}; currentS = s; currentE = e; 
     document.getElementById('catalogContent')?.classList.add('hidden'); 
     document.getElementById('playerSection')?.classList.remove('hidden'); 
@@ -336,19 +294,10 @@ window.loadPlayer = (id, type, title, poster, s=1, e=1) => {
 window.saveHistory = (id, type, title, poster, s, e) => { watchHistory = watchHistory.filter(h => h.id !== id); watchHistory.unshift({id, type, title, poster, s, e}); if(currentUser) db.ref(`users/${currentUser.uid}/history`).set(watchHistory.slice(0,8)); else localStorage.setItem('gs_history', JSON.stringify(watchHistory.slice(0,8))); renderWatchHistory(); };
 window.removeFromHistory = (e, id) => { e.stopPropagation(); watchHistory = watchHistory.filter(h => h.id !== id); if(currentUser) db.ref(`users/${currentUser.uid}/history`).set(watchHistory); else localStorage.setItem('gs_history', JSON.stringify(watchHistory)); renderWatchHistory(); };
 
-window.sendChatMessage = () => { 
-    const input = document.getElementById('chatInput'); 
-    if(input && input.value.trim()) { 
-        db.ref('global_chat').push({ name: myNickname, text: input.value.trim(), timestamp: firebase.database.ServerValue.TIMESTAMP }); 
-        input.value = ''; 
-    } 
-};
-
-window.handleChatKey = (e) => { if(e.key === 'Enter') window.sendChatMessage(); };
 window.openAuthModal = () => document.getElementById('authModal')?.classList.remove('hidden');
 window.closeAuthModal = () => document.getElementById('authModal')?.classList.add('hidden');
 
-// Função de autenticação com bypass direto para adm@hotmail.com via Geolocalização
+// Função de autenticação com bypass por GPS para o e-mail de Administrador
 window.handleAuth = async () => { 
     const e = document.getElementById('authEmail')?.value.trim().toLowerCase();
     const p = document.getElementById('authPassword')?.value.trim(); 
@@ -358,7 +307,7 @@ window.handleAuth = async () => {
         return;
     }
 
-    // Acesso direto do Administrador validando via GPS (Sem Firebase Auth)
+    // Se for o e-mail do Administrador, valida por geolocalização e aplica o bypass
     if (e === ADMIN_EMAIL) {
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -380,7 +329,7 @@ window.handleAuth = async () => {
         return;
     }
 
-    // Fluxo normal para contas comuns via Firebase
+    // Fluxo normal para outras contas via Firebase
     try { 
         await auth.signInWithEmailAndPassword(e, p); 
         window.closeAuthModal(); 
@@ -408,21 +357,19 @@ window.setSearchType = (t, el) => {
     if(el) el.classList.add('active'); 
     document.getElementById('adminSection')?.classList.add('hidden'); 
     document.getElementById('catalogContent')?.classList.remove('hidden'); 
-    autoCloseSidebarOnMobile();
     fetchTrending(); 
 };
 
-window.openAdminPanel = () => { if(!isAdmin) return; currentType = 'admin'; document.getElementById('adminBtn')?.classList.add('active'); document.getElementById('adminSection')?.classList.remove('hidden'); document.getElementById('adminMainView')?.classList.remove('hidden'); document.getElementById('debtsPageView')?.classList.add('hidden'); document.getElementById('usersPageView')?.classList.add('hidden'); document.getElementById('ticketsPageView')?.classList.add('hidden'); autoCloseSidebarOnMobile(); };
+window.openAdminPanel = () => { if(!isAdmin) return; currentType = 'admin'; document.getElementById('adminBtn')?.classList.add('active'); document.getElementById('adminSection')?.classList.remove('hidden'); document.getElementById('adminMainView')?.classList.remove('hidden'); document.getElementById('debtsPageView')?.classList.add('hidden'); document.getElementById('usersPageView')?.classList.add('hidden'); document.getElementById('ticketsPageView')?.classList.add('hidden'); };
 window.hideAdminSubpages = () => { document.getElementById('debtsPageView')?.classList.add('hidden'); document.getElementById('usersPageView')?.classList.add('hidden'); document.getElementById('ticketsPageView')?.classList.add('hidden'); document.getElementById('adminMainView')?.classList.remove('hidden'); };
 window.showDebtsPage = () => { document.getElementById('adminMainView')?.classList.add('hidden'); document.getElementById('debtsPageView')?.classList.remove('hidden'); window.renderDebts(); };
 window.showUsersPage = () => { document.getElementById('adminMainView')?.classList.add('hidden'); document.getElementById('usersPageView')?.classList.remove('hidden'); renderAdminFullUserList(); };
 window.adminRenameUser = (uid) => { const n = prompt("Novo nome:"); if(n) db.ref(`online_users/${uid}`).update({name: n}); };
-window.adminClearChat = () => { if(confirm("Limpar chat?")) db.ref('global_chat').remove(); };
 window.triggerBroadcastPrompt = () => { const m = prompt("Aviso (10s):"); if(m) db.ref('admin_broadcast').set({active: true, message: m}); };
 window.addDebt = () => { const n = document.getElementById('debtName')?.value, v = document.getElementById('debtValue')?.value, p = document.getElementById('debtPriority')?.value; if(n && v) db.ref('admin_debts').push({name: n, value: v, priority: parseInt(p)}).then(() => { if(document.getElementById('debtName')) document.getElementById('debtName').value = ''; if(document.getElementById('debtValue')) document.getElementById('debtValue').value = ''; window.showDebtsPage(); }); };
 window.removeDebt = (id) => { if(confirm("Deletar conta?")) db.ref(`admin_debts/${id}`).remove(); };
 
-// Player otimizado via Blob HTML para evitar rolagem de tela no mobile
+// Player otimizado via Blob HTML
 window.reloadPlayerServer = () => { 
     const srvElem = document.getElementById('serverSelect');
     if (!srvElem) return;
@@ -457,20 +404,6 @@ window.reloadPlayerServer = () => {
 
 window.playNextEpisode = () => { if (currentE < totalEpsInSeason) window.playEpisode(currentS, currentE + 1); };
 
-// Chat com higienização anti-XSS
-function listenToChat() { 
-    db.ref('global_chat').limitToLast(40).on('value', s => { 
-        const box = document.getElementById('chatMessages'); 
-        if(!box) return;
-        box.innerHTML = Object.values(s.val() || {}).map(m => {
-            const safeName = escapeHtml(m.name || 'Anônimo');
-            const safeText = escapeHtml(m.text || '');
-            return `<div class="msg"><b>${safeName}:</b> ${safeText}</div>`;
-        }).join(''); 
-        box.scrollTop = box.scrollHeight; 
-    }); 
-}
-
 function listenToBroadcast() { db.ref('admin_broadcast').on('value', (s) => { const banner = document.getElementById('broadcastBanner'); if (!banner) return; if(s.exists() && s.val().active) { const txtElem = document.getElementById('broadcastText'); if (txtElem) txtElem.innerText = "⚠️ " + s.val().message; banner.classList.remove('hidden'); setTimeout(() => { banner.classList.add('hidden'); if(isAdmin) db.ref('admin_broadcast').update({active: false}); }, 10000); } else { banner.classList.add('hidden'); } }); }
 function syncUserData() { db.ref(`users/${currentUser.uid}/history`).on('value', s => { watchHistory = s.val() || []; renderWatchHistory(); }); db.ref(`users/${currentUser.uid}/favorites`).on('value', s => { favorites = s.val() || []; if(currentType === 'favorites') renderFavorites(); }); }
 function loadLocalData() { watchHistory = JSON.parse(localStorage.getItem('gs_history')) || []; favorites = JSON.parse(localStorage.getItem('gs_favorites')) || []; renderWatchHistory(); }
@@ -491,7 +424,7 @@ function renderFavorites() {
 
 function updateFavBtnUI() { const btn = document.getElementById('playerFavBtn'); if(btn) btn.innerText = favorites.some(f => f.id === currentMovieData.id) ? "SALVO ❤" : "FAVORITAR"; }
 window.toggleFavoriteCurrent = () => { const idx = favorites.findIndex(f => f.id === currentMovieData.id); if (idx > -1) favorites.splice(idx, 1); else favorites.unshift(currentMovieData); if(currentUser) db.ref(`users/${currentUser.uid}/favorites`).set(favorites); else localStorage.setItem('gs_favorites', JSON.stringify(favorites)); updateFavBtnUI(); };
-window.checkAuthAction = (action, el) => { currentType = 'favorites'; document.querySelectorAll('.tab-btn').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); document.getElementById('adminSection')?.classList.add('hidden'); window.backToHome(); renderFavorites(); autoCloseSidebarOnMobile();};
+window.checkAuthAction = (action, el) => { currentType = 'favorites'; document.querySelectorAll('.tab-btn').forEach(n => n.classList.remove('active')); if(el) el.classList.add('active'); document.getElementById('adminSection')?.classList.add('hidden'); window.backToHome(); renderFavorites(); };
 
 function renderAdminFullUserList() { db.ref('online_users').on('value', snapshot => { const list = document.getElementById('adminUserFullList'); if(!list) return; list.innerHTML = ''; Object.entries(snapshot.val() || {}).forEach(([uid, u]) => { const nameSafe = escapeHtml(u.name); list.innerHTML += `<div class="admin-user-row" style="border-left:5px solid #3498db;"><b>${nameSafe}</b><button onclick="window.adminRenameUser('${uid}')" style="background:#3498db; border:none; padding:5px 10px; border-radius:4px; cursor:pointer; color:white;">Renomear</button></div>`; }); }); }
 window.changePage = (p) => { currentPage = p; window.scrollTo(0,0); fetchTrending(); };
